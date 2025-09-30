@@ -6,6 +6,10 @@
 #include "PhysicsEngine/PhysicsHandleComponent.h"
 #include "GrabbableComponent.generated.h"
 
+// Forward decls for Character handling
+class ACharacter;
+class UCapsuleComponent;
+class USkeletalMeshComponent;
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class MYPROJECT3_API UGrabbableComponent : public UActorComponent, public IInteractable
@@ -53,4 +57,18 @@ private:
 
     void EnsurePhysicsHandle();
     UPrimitiveComponent* GetTargetPrimitive(const FHitResult& Hit);
+
+    // --- State used when the grabbed thing is an ACharacter ---
+    UPROPERTY() ACharacter* HeldCharacter = nullptr;
+    UPROPERTY() USkeletalMeshComponent* HeldSkel = nullptr;
+    UPROPERTY() UCapsuleComponent* HeldCapsule = nullptr;
+
+    // Saved settings to restore on release
+    uint8 SavedMoveMode = 0; // EMovementMode as uint8
+    TEnumAsByte<ECollisionEnabled::Type> SavedCapsuleCollision = ECollisionEnabled::QueryAndPhysics;
+    FName SavedMeshCollisionProfile = NAME_None;
+    FName GrabbedBone = NAME_None;
+
+    // --- New: whether we must NOT drive rotation while held (rotation locks present)
+    bool bLockRotationWhileHeld = false;
 };
