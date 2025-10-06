@@ -58,6 +58,7 @@ void UGrabbableComponent::OnInteractStart_Implementation(const FHitResult& Hit)
     UE_LOG(LogTemp, Warning, TEXT("GrabbableComponent::OnInteractStart called"));
 
     IsBeingGrabbed = true;
+    OnGrabbed.Broadcast();
 
     EnsurePhysicsHandle();
 
@@ -136,6 +137,7 @@ void UGrabbableComponent::OnInteractEnd_Implementation()
     UE_LOG(LogTemp, Warning, TEXT("GrabbableComponent::OnInteractEnd called"));
 
     IsBeingGrabbed = false;
+    OnReleased.Broadcast();
 
     if (PhysicsHandle && PhysicsHandle->GetGrabbedComponent())
     {
