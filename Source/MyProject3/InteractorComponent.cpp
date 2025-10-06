@@ -8,6 +8,7 @@ UInteractorComponent::UInteractorComponent()
     PrimaryComponentTick.bCanEverTick = true;
 }
 
+
 void UInteractorComponent::BeginPlay()
 {
     Super::BeginPlay();
@@ -15,6 +16,7 @@ void UInteractorComponent::BeginPlay()
     CurrentDepth = InitialCursorDepth;
     UE_LOG(LogTemp, Warning, TEXT("InteractorComponent BeginPlay - Component initialized"));
 }
+
 
 void UInteractorComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
@@ -86,40 +88,19 @@ bool UInteractorComponent::GetMouseRay(FVector& OutOrigin, FVector& OutDirection
     return false;
 }
 
-<<<<<<< HEAD
 // shoots ray from mouse into world and checks what it hits
-=======
-// UPDATED: try your channel first, then fallback to object-type trace that includes ECC_Pawn
->>>>>>> origin/NPCBranch
 bool UInteractorComponent::TraceFromMouse(FHitResult& OutHit)
 {
     FVector Origin, Direction;
     if (!GetMouseRay(Origin, Direction)) return false;
 
-    const FVector End = Origin + Direction * TraceDistance;
-
+    FVector End = Origin + Direction * TraceDistance;
     FCollisionQueryParams Params;
     Params.AddIgnoredActor(GetOwner());
 
-    // 1) Primary: project-configured trace channel (e.g., Visibility)
     bool bHit = GetWorld()->LineTraceSingleByChannel(OutHit, Origin, End, TraceChannel, Params);
 
-<<<<<<< HEAD
     // draw debug lines to visualize raycast. green if hit something, red if not
-=======
-    // 2) Fallback: object-type trace that includes Pawns (Character capsules)
-    if (!bHit)
-    {
-        FCollisionObjectQueryParams ObjParams;
-        ObjParams.AddObjectTypesToQuery(ECC_WorldStatic);
-        ObjParams.AddObjectTypesToQuery(ECC_WorldDynamic);
-        ObjParams.AddObjectTypesToQuery(ECC_PhysicsBody);
-        ObjParams.AddObjectTypesToQuery(ECC_Pawn); // key for Characters
-
-        bHit = GetWorld()->LineTraceSingleByObjectType(OutHit, Origin, End, ObjParams, Params);
-    }
-
->>>>>>> origin/NPCBranch
     DrawDebugLine(GetWorld(), Origin, End, bHit ? FColor::Green : FColor::Red, false, 0.1f, 0, 0.2f);
     if (bHit)
     {

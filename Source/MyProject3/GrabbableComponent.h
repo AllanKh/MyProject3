@@ -19,7 +19,7 @@ class MYPROJECT3_API UGrabbableComponent : public UActorComponent, public IInter
 public:
     UGrabbableComponent();
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Grab Settings")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Grab Setings")
     UPrimitiveComponent* TargetComponent = nullptr;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Grab Settings")
