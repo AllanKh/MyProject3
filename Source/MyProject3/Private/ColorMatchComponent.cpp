@@ -12,6 +12,7 @@ void UColorMatchComponent::BeginPlay()
 {
     Super::BeginPlay();
 
+    // create debug text component if enabled
     if (bShouldUseDebugLabel)
     {
         DebugTextComponent = NewObject<UTextRenderComponent>(GetOwner(), TEXT("MatchDebugText"));
@@ -32,6 +33,7 @@ void UColorMatchComponent::BeginPlay()
     TryAutoRegisterWithManager();
 }
 
+// finds the game manager in the world
 AMatchGameManager* UColorMatchComponent::FindGameManager() const
 {
     TArray<AActor*> FoundManagers;
@@ -39,6 +41,7 @@ AMatchGameManager* UColorMatchComponent::FindGameManager() const
     return FoundManagers.Num() ? Cast<AMatchGameManager>(FoundManagers[0]) : nullptr;
 }
 
+// automatically registers this npc with game manager on start
 void UColorMatchComponent::TryAutoRegisterWithManager()
 {
     if (AMatchGameManager* GameManager = FindGameManager())
@@ -47,6 +50,7 @@ void UColorMatchComponent::TryAutoRegisterWithManager()
     }
 }
 
+// assigns color and sets state to looking or idle
 void UColorMatchComponent::Assign(EMatchColor NewColor, bool bIsLookingForMatch)
 {
     CurrentColor = NewColor;
@@ -55,6 +59,7 @@ void UColorMatchComponent::Assign(EMatchColor NewColor, bool bIsLookingForMatch)
     OnAssignmentChanged.Broadcast(CurrentColor, bIsLookingForMatch);
 }
 
+// clears color assignment and returns to idle state
 void UColorMatchComponent::ClearAssignment()
 {
     CurrentColor = EMatchColor::None;
@@ -63,6 +68,7 @@ void UColorMatchComponent::ClearAssignment()
     OnAssignmentChanged.Broadcast(CurrentColor, false);
 }
 
+// called when this npc successfully matched with another
 void UColorMatchComponent::HandleMatched(AActor* OtherActor)
 {
     State = EMatchState::Matched;
@@ -70,6 +76,7 @@ void UColorMatchComponent::HandleMatched(AActor* OtherActor)
     OnMatchedWith.Broadcast(OtherActor);
 }
 
+// called when this npc collided but colors didnt match
 void UColorMatchComponent::HandleMismatch(AActor* OtherActor)
 {
     State = EMatchState::Dead;
@@ -77,6 +84,7 @@ void UColorMatchComponent::HandleMismatch(AActor* OtherActor)
     OnMismatchWith.Broadcast(OtherActor);
 }
 
+// converts match color enum to unreal color for debug display
 static FColor ConvertMatchColorToFColor(EMatchColor MatchColor)
 {
     switch (MatchColor)
@@ -95,6 +103,7 @@ static FColor ConvertMatchColorToFColor(EMatchColor MatchColor)
     }
 }
 
+// converts match color enum to text for debug display
 static FText ConvertMatchColorToText(EMatchColor MatchColor)
 {
     switch (MatchColor)
@@ -113,13 +122,15 @@ static FText ConvertMatchColorToText(EMatchColor MatchColor)
     }
 }
 
+// updates debug label to show current color if looking for match
 void UColorMatchComponent::RefreshDebugLabel()
 {
-    if (!DebugTextComponent) 
+    if (!DebugTextComponent)
     {
         return;
     }
 
+    // only show label when npc has color and is looking for match
     const bool bShouldShowLabel = (CurrentColor != EMatchColor::None) && (State == EMatchState::LookingForMatch);
     DebugTextComponent->SetHiddenInGame(!bShouldShowLabel);
 

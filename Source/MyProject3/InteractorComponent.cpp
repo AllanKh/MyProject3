@@ -22,6 +22,7 @@ void UInteractorComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 {
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
+    // check what the mouse is pointing at
     FHitResult Hit;
     if (TraceFromMouse(Hit))
     {
@@ -30,6 +31,7 @@ void UInteractorComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
     }
     else
     {
+        // mouse not pointing at anything. clear hover if we had one
         if (CurrentHover.GetObject())
         {
             IInteractable::Execute_OnHoverEnd(CurrentHover.GetObject());
@@ -39,6 +41,7 @@ void UInteractorComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
         CachedHit = FHitResult();
     }
 
+    // if currently interacting with something, send it continuous updates
     if (ActiveInteract.GetObject())
     {
         FVector RayOrigin, RayDir;
@@ -50,6 +53,7 @@ void UInteractorComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
                 FVector2D MousePos;
                 PC->GetMousePosition(MousePos.X, MousePos.Y);
 
+                // build update package with all interaction info
                 FInteractUpdate Update;
                 Update.WorldHitLocation = CachedHit.ImpactPoint;
                 Update.WorldHitNormal = CachedHit.ImpactNormal;
@@ -65,6 +69,7 @@ void UInteractorComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
     }
 }
 
+// gets ray from camera through mouse cursor into world
 bool UInteractorComponent::GetMouseRay(FVector& OutOrigin, FVector& OutDirection) const
 {
     APlayerController* PC = Cast<APlayerController>(GetOwner()->GetInstigatorController());
@@ -83,6 +88,7 @@ bool UInteractorComponent::GetMouseRay(FVector& OutOrigin, FVector& OutDirection
     return false;
 }
 
+// shoots ray from mouse into world and checks what it hits
 bool UInteractorComponent::TraceFromMouse(FHitResult& OutHit)
 {
     FVector Origin, Direction;
@@ -94,6 +100,7 @@ bool UInteractorComponent::TraceFromMouse(FHitResult& OutHit)
 
     bool bHit = GetWorld()->LineTraceSingleByChannel(OutHit, Origin, End, TraceChannel, Params);
 
+    // draw debug lines to visualize raycast. green if hit something, red if not
     DrawDebugLine(GetWorld(), Origin, End, bHit ? FColor::Green : FColor::Red, false, 0.1f, 0, 0.2f);
     if (bHit)
     {
@@ -103,15 +110,18 @@ bool UInteractorComponent::TraceFromMouse(FHitResult& OutHit)
     return bHit;
 }
 
+// calculates where in 3D space the cursor should place objects based on scroll depth
 FVector UInteractorComponent::GetTargetPointInWorld(const FVector& RayOrigin, const FVector& RayDirection) const
 {
     return RayOrigin + RayDirection * CurrentDepth;
 }
 
+// handles hover state changes. checks if mouse is over interactable object
 void UInteractorComponent::UpdateHover(const FHitResult& Hit)
 {
     UObject* NewHoverObject = nullptr;
 
+    // try to find interactable in this priority order: component, actor, actor's components
     if (Hit.GetComponent() && Hit.GetComponent()->Implements<UInteractable>())
     {
         NewHoverObject = Hit.GetComponent();
@@ -128,14 +138,10 @@ void UInteractorComponent::UpdateHover(const FHitResult& Hit)
         if (Components.Num() > 0)
         {
             NewHoverObject = Components[0];
-            //UE_LOG(LogTemp, Warning, TEXT("Found interactable in actor's COMPONENTS: %s"), *NewHoverObject->GetName());
-        }
-        else
-        {
-            //UE_LOG(LogTemp, Warning, TEXT("Hit actor '%s' has no components implementing Interactable"), *Hit.GetActor()->GetName());
         }
     }
 
+    // if hover target changed, notify old and new objects
     if (NewHoverObject != CurrentHover.GetObject())
     {
         if (CurrentHover.GetObject())
@@ -153,16 +159,19 @@ void UInteractorComponent::UpdateHover(const FHitResult& Hit)
     }
 }
 
+// called when player presses interact button (usually left mouse)
 void UInteractorComponent::InputInteractPressed()
 {
     UE_LOG(LogTemp, Warning, TEXT("InputInteractPressed called"));
 
+    // can't start new interaction while one is active
     if (ActiveInteract.GetObject())
     {
         UE_LOG(LogTemp, Warning, TEXT("Already have active interact, ignoring"));
         return;
     }
 
+    // start interaction with hovered object
     if (CurrentHover.GetObject())
     {
         UE_LOG(LogTemp, Warning, TEXT("Starting interact on: %s"), *CurrentHover.GetObject()->GetName());
@@ -174,6 +183,7 @@ void UInteractorComponent::InputInteractPressed()
             PC->GetMousePosition(LastMousePos.X, LastMousePos.Y);
         }
 
+        // calculate depth to object so grabbed items stay at same distance
         FVector RayOrigin, RayDir;
         if (GetMouseRay(RayOrigin, RayDir) && CachedHit.bBlockingHit)
         {
@@ -189,6 +199,7 @@ void UInteractorComponent::InputInteractPressed()
     }
 }
 
+// called when player releases interact button
 void UInteractorComponent::InputInteractReleased()
 {
     UE_LOG(LogTemp, Warning, TEXT("InputInteractReleased called"));
@@ -201,24 +212,28 @@ void UInteractorComponent::InputInteractReleased()
     }
 }
 
+// called when player presses alt rotate button (usually right mouse)
 void UInteractorComponent::InputAltRotatePressed()
 {
     bAltRotateHeld = true;
     UE_LOG(LogTemp, Warning, TEXT("Alt Rotate Pressed"));
 }
 
+// called when player releases alt rotate button
 void UInteractorComponent::InputAltRotateReleased()
 {
     bAltRotateHeld = false;
     UE_LOG(LogTemp, Warning, TEXT("Alt Rotate Released"));
 }
 
+// called when player scrolls mouse wheel up. brings grabbed object closer
 void UInteractorComponent::InputScrollUp()
 {
     CurrentDepth = FMath::Clamp(CurrentDepth + 50.f, 50.f, 3000.f);
     UE_LOG(LogTemp, Warning, TEXT("Scroll UP: depth=%f (closer)"), CurrentDepth);
 }
 
+// called when player scrolls mouse wheel down. pushes grabbed object farther
 void UInteractorComponent::InputScrollDown()
 {
     CurrentDepth = FMath::Clamp(CurrentDepth - 50.f, 50.f, 3000.f);

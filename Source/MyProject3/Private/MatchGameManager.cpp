@@ -18,32 +18,36 @@ void AMatchGameManager::BeginPlay()
     ScheduleNextColorAssignment();
 }
 
+// adds npc to list of managed npcs
 void AMatchGameManager::RegisterNPC(AActor* NPCActor)
 {
-    if (!NPCActor) 
+    if (!NPCActor)
     {
         return;
     }
     RegisteredNPCs.AddUnique(NPCActor);
 }
 
+// removes npc from list of managed npcs
 void AMatchGameManager::UnregisterNPC(AActor* NPCActor)
 {
     RegisteredNPCs.Remove(NPCActor);
 }
 
+// finds color match component on an actor
 UColorMatchComponent* AMatchGameManager::GetColorMatchComponent(AActor* Actor)
 {
     return Actor ? Actor->FindComponentByClass<UColorMatchComponent>() : nullptr;
 }
 
+// checks if two npcs have matching colors and are both looking for matches
 bool AMatchGameManager::DoColorsMatchAndAreBothLooking(UColorMatchComponent* FirstComponent, UColorMatchComponent* SecondComponent, EMatchColor& OutMatchedColor)
 {
-    if (!FirstComponent || !SecondComponent) 
+    if (!FirstComponent || !SecondComponent)
     {
         return false;
     }
-    if (!FirstComponent->IsLooking() || !SecondComponent->IsLooking()) 
+    if (!FirstComponent->IsLooking() || !SecondComponent->IsLooking())
     {
         return false;
     }
@@ -52,21 +56,23 @@ bool AMatchGameManager::DoColorsMatchAndAreBothLooking(UColorMatchComponent* Fir
         return false;
     }
     const bool bColorsAreSame = (FirstComponent->CurrentColor == SecondComponent->CurrentColor);
-    if (bColorsAreSame) 
+    if (bColorsAreSame)
     {
         OutMatchedColor = FirstComponent->CurrentColor;
     }
     return bColorsAreSame;
 }
 
+// checks if position is inside play area box
 bool AMatchGameManager::IsInsidePlayArea(const FVector& WorldPosition) const
 {
     return UKismetMathLibrary::IsPointInBoxWithTransform(WorldPosition, PlayArea->GetComponentTransform(), PlayArea->GetScaledBoxExtent());
 }
 
+// called when two npcs collide. checks if colors match and awards points accordingly
 void AMatchGameManager::HandleNPCVsNPCCollision(AActor* FirstActor, AActor* SecondActor)
 {
-    if (!FirstActor || !SecondActor) 
+    if (!FirstActor || !SecondActor)
     {
         return;
     }
@@ -74,7 +80,7 @@ void AMatchGameManager::HandleNPCVsNPCCollision(AActor* FirstActor, AActor* Seco
     UColorMatchComponent* FirstMatchComponent = GetColorMatchComponent(FirstActor);
     UColorMatchComponent* SecondMatchComponent = GetColorMatchComponent(SecondActor);
 
-    if (!FirstMatchComponent || !SecondMatchComponent) 
+    if (!FirstMatchComponent || !SecondMatchComponent)
     {
         return;
     }
@@ -83,6 +89,7 @@ void AMatchGameManager::HandleNPCVsNPCCollision(AActor* FirstActor, AActor* Seco
     EMatchColor MatchedColor;
     if (DoColorsMatchAndAreBothLooking(FirstMatchComponent, SecondMatchComponent, MatchedColor))
     {
+        // colors match. give point and remove both npcs
         UE_LOG(LogTemp, Warning, TEXT("MATCH +1"));
         AddToScore(+1);
         ShowScoreToast(+1);
@@ -95,6 +102,7 @@ void AMatchGameManager::HandleNPCVsNPCCollision(AActor* FirstActor, AActor* Seco
     }
     else
     {
+        // colors dont match. lose point and remove both npcs
         UE_LOG(LogTemp, Warning, TEXT("MISMATCH -1"));
         AddToScore(-1);
         ShowScoreToast(-1);
@@ -105,11 +113,13 @@ void AMatchGameManager::HandleNPCVsNPCCollision(AActor* FirstActor, AActor* Seco
     }
 }
 
+// adds or subtracts from score
 void AMatchGameManager::AddToScore(int32 ScoreDelta)
 {
     Score += ScoreDelta;
 }
 
+// shows score change on screen
 void AMatchGameManager::ShowScoreToast(int32 ScoreDelta)
 {
     const FLinearColor ToastColor = (ScoreDelta > 0) ? FLinearColor::Green : FLinearColor::Red;
@@ -117,9 +127,10 @@ void AMatchGameManager::ShowScoreToast(int32 ScoreDelta)
     UKismetSystemLibrary::PrintString(GetWorld(), ToastMessage, true, true, ToastColor, 1.5f);
 }
 
+// removes npc from game
 void AMatchGameManager::DespawnNPC(AActor* NPCActor)
 {
-    if (!NPCActor) 
+    if (!NPCActor)
     {
         return;
     }
@@ -127,12 +138,14 @@ void AMatchGameManager::DespawnNPC(AActor* NPCActor)
     NPCActor->Destroy();
 }
 
+// sets up timer for next color assignment
 void AMatchGameManager::ScheduleNextColorAssignment()
 {
     const float RandomDelay = FMath::FRandRange(MinimumAssignInterval, MaximumAssignInterval);
     GetWorldTimerManager().SetTimer(AssignColorTimer, this, &AMatchGameManager::AssignColorToRandomNPC, RandomDelay, false);
 }
 
+// picks random idle npc inside play area and gives it a color to look for
 void AMatchGameManager::AssignColorToRandomNPC()
 {
     TArray<AActor*> IdleNPCsInsideArea;
@@ -140,7 +153,7 @@ void AMatchGameManager::AssignColorToRandomNPC()
     {
         if (AActor* NPCActor = WeakNPC.Get())
         {
-            if (!IsInsidePlayArea(NPCActor->GetActorLocation())) 
+            if (!IsInsidePlayArea(NPCActor->GetActorLocation()))
             {
                 continue;
             }
