@@ -17,9 +17,9 @@ enum class EMatchState : uint8
     Dead
 };
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnMatchAssignmentChanged, EMatchColor, NewColor, bool, bLooking);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMatchedWith, AActor*, Other);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMismatchWith, AActor*, Other);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnMatchAssignmentChanged, EMatchColor, NewColor, bool, bIsLookingForMatch);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMatchedWith, AActor*, OtherActor);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMismatchWith, AActor*, OtherActor);
 
 UCLASS(ClassGroup = (MiniGame), meta = (BlueprintSpawnableComponent))
 class MYPROJECT3_API UColorMatchComponent : public UActorComponent
@@ -36,7 +36,7 @@ public:
     EMatchState State = EMatchState::Idle;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Match|Debug")
-    bool bUseDebugLabel = true;
+    bool bShouldUseDebugLabel = true;
 
     UPROPERTY(BlueprintAssignable, Category = "Match|Events")
     FOnMatchAssignmentChanged OnAssignmentChanged;
@@ -48,7 +48,7 @@ public:
     FOnMismatchWith OnMismatchWith;
 
     UFUNCTION(BlueprintCallable, Category = "Match")
-    void Assign(EMatchColor NewColor, bool bLookingForMatch);
+    void Assign(EMatchColor NewColor, bool bIsLookingForMatch);
 
     UFUNCTION(BlueprintCallable, Category = "Match")
     void ClearAssignment();
@@ -56,17 +56,17 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Match")
     bool IsLooking() const { return State == EMatchState::LookingForMatch; }
 
-    void HandleMatched(AActor* Other);
-    void HandleMismatch(AActor* Other);
+    void HandleMatched(AActor* OtherActor);
+    void HandleMismatch(AActor* OtherActor);
 
 protected:
     virtual void BeginPlay() override;
 
 private:
     void RefreshDebugLabel();
-    void TryAutoRegister();
-    AMatchGameManager* FindManager() const;
+    void TryAutoRegisterWithManager();
+    AMatchGameManager* FindGameManager() const;
 
     UPROPERTY()
-    UTextRenderComponent* DebugText = nullptr;
+    UTextRenderComponent* DebugTextComponent = nullptr;
 };

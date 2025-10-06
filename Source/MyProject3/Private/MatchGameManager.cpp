@@ -15,147 +15,159 @@ AMatchGameManager::AMatchGameManager()
 void AMatchGameManager::BeginPlay()
 {
     Super::BeginPlay();
-    UE_LOG(LogTemp, Warning, TEXT("[Manager] BeginPlay. AssignInterval [%.2f, %.2f]"), AssignIntervalMin, AssignIntervalMax);
-    ScheduleNextAssign();
+    ScheduleNextColorAssignment();
 }
 
-void AMatchGameManager::RegisterNPC(AActor* NPC)
+void AMatchGameManager::RegisterNPC(AActor* NPCActor)
 {
-    if (!NPC) return;
-    NPCs.AddUnique(NPC);
-    UE_LOG(LogTemp, Warning, TEXT("[Manager] Registered NPC: %s (Total=%d)"), *NPC->GetName(), NPCs.Num());
+    if (!NPCActor) 
+    {
+        return;
+    }
+    RegisteredNPCs.AddUnique(NPCActor);
 }
 
-void AMatchGameManager::UnregisterNPC(AActor* NPC)
+void AMatchGameManager::UnregisterNPC(AActor* NPCActor)
 {
-    NPCs.Remove(NPC);
-    UE_LOG(LogTemp, Warning, TEXT("[Manager] Unregistered NPC: %s (Total=%d)"), *GetNameSafe(NPC), NPCs.Num());
+    RegisteredNPCs.Remove(NPCActor);
 }
 
-UColorMatchComponent* AMatchGameManager::GetMatchComp(AActor* Actor)
+UColorMatchComponent* AMatchGameManager::GetColorMatchComponent(AActor* Actor)
 {
     return Actor ? Actor->FindComponentByClass<UColorMatchComponent>() : nullptr;
 }
 
-bool AMatchGameManager::ColorsMatchAndBothLooking(UColorMatchComponent* A, UColorMatchComponent* B, EMatchColor& Out)
+bool AMatchGameManager::DoColorsMatchAndAreBothLooking(UColorMatchComponent* FirstComponent, UColorMatchComponent* SecondComponent, EMatchColor& OutMatchedColor)
 {
-    if (!A || !B) return false;
-    if (!A->IsLooking() || !B->IsLooking()) return false;
-    if (A->CurrentColor == EMatchColor::None || B->CurrentColor == EMatchColor::None) return false;
-    const bool bSame = (A->CurrentColor == B->CurrentColor);
-    if (bSame) Out = A->CurrentColor;
-    return bSame;
-}
-
-bool AMatchGameManager::IsInsidePlayArea(const FVector& WorldPos) const
-{
-    return UKismetMathLibrary::IsPointInBoxWithTransform(WorldPos, PlayArea->GetComponentTransform(), PlayArea->GetScaledBoxExtent());
-}
-
-void AMatchGameManager::HandleNPCVsNPCCollision(AActor* A, AActor* B)
-{
-    if (!A || !B) return;
-
-    UColorMatchComponent* CA = GetMatchComp(A);
-    UColorMatchComponent* CB = GetMatchComp(B);
-
-    UE_LOG(LogTemp, Warning, TEXT("[Manager] HandleCollision %s vs %s | CA=%s CB=%s"),
-        *A->GetName(), *B->GetName(),
-        CA ? TEXT("YES") : TEXT("NO"),
-        CB ? TEXT("YES") : TEXT("NO"));
-
-    if (!CA || !CB) return;
-
-    UE_LOG(LogTemp, Warning, TEXT("[Manager]   States: A(L:%d C:%d) B(L:%d C:%d)"),
-        CA->IsLooking() ? 1 : 0, (uint8)CA->CurrentColor,
-        CB->IsLooking() ? 1 : 0, (uint8)CB->CurrentColor);
-
-    EMatchColor Color;
-    if (ColorsMatchAndBothLooking(CA, CB, Color))
+    if (!FirstComponent || !SecondComponent) 
     {
-        UE_LOG(LogTemp, Warning, TEXT("[Manager]   MATCH! +1"));
-        AddScore(+1);
-        ToastDelta(+1);
-        CA->HandleMatched(B);
-        CB->HandleMatched(A);
-        CA->ClearAssignment();
-        CB->ClearAssignment();
-        Despawn(A);
-        Despawn(B);
+        return false;
+    }
+    if (!FirstComponent->IsLooking() || !SecondComponent->IsLooking()) 
+    {
+        return false;
+    }
+    if (FirstComponent->CurrentColor == EMatchColor::None || SecondComponent->CurrentColor == EMatchColor::None)
+    {
+        return false;
+    }
+    const bool bColorsAreSame = (FirstComponent->CurrentColor == SecondComponent->CurrentColor);
+    if (bColorsAreSame) 
+    {
+        OutMatchedColor = FirstComponent->CurrentColor;
+    }
+    return bColorsAreSame;
+}
+
+bool AMatchGameManager::IsInsidePlayArea(const FVector& WorldPosition) const
+{
+    return UKismetMathLibrary::IsPointInBoxWithTransform(WorldPosition, PlayArea->GetComponentTransform(), PlayArea->GetScaledBoxExtent());
+}
+
+void AMatchGameManager::HandleNPCVsNPCCollision(AActor* FirstActor, AActor* SecondActor)
+{
+    if (!FirstActor || !SecondActor) 
+    {
+        return;
+    }
+
+    UColorMatchComponent* FirstMatchComponent = GetColorMatchComponent(FirstActor);
+    UColorMatchComponent* SecondMatchComponent = GetColorMatchComponent(SecondActor);
+
+    if (!FirstMatchComponent || !SecondMatchComponent) 
+    {
+        return;
+    }
+
+
+    EMatchColor MatchedColor;
+    if (DoColorsMatchAndAreBothLooking(FirstMatchComponent, SecondMatchComponent, MatchedColor))
+    {
+        UE_LOG(LogTemp, Warning, TEXT("MATCH +1"));
+        AddToScore(+1);
+        ShowScoreToast(+1);
+        FirstMatchComponent->HandleMatched(SecondActor);
+        SecondMatchComponent->HandleMatched(FirstActor);
+        FirstMatchComponent->ClearAssignment();
+        SecondMatchComponent->ClearAssignment();
+        DespawnNPC(FirstActor);
+        DespawnNPC(SecondActor);
     }
     else
     {
-        UE_LOG(LogTemp, Warning, TEXT("[Manager]   MISMATCH/INVALID! -1 (Despawn both)"));
-        AddScore(-1);
-        ToastDelta(-1);
-        CA->HandleMismatch(B);
-        CB->HandleMismatch(A);
-        Despawn(A);
-        Despawn(B);
+        UE_LOG(LogTemp, Warning, TEXT("MISMATCH -1"));
+        AddToScore(-1);
+        ShowScoreToast(-1);
+        FirstMatchComponent->HandleMismatch(SecondActor);
+        SecondMatchComponent->HandleMismatch(FirstActor);
+        DespawnNPC(FirstActor);
+        DespawnNPC(SecondActor);
     }
 }
 
-void AMatchGameManager::AddScore(int32 Delta)
+void AMatchGameManager::AddToScore(int32 ScoreDelta)
 {
-    Score += Delta;
-    UE_LOG(LogTemp, Warning, TEXT("[Manager] Score = %d (Delta %d)"), Score, Delta);
+    Score += ScoreDelta;
 }
 
-void AMatchGameManager::ToastDelta(int32 Delta)
+void AMatchGameManager::ShowScoreToast(int32 ScoreDelta)
 {
-    const FLinearColor Col = (Delta > 0) ? FLinearColor::Green : FLinearColor::Red;
-    const FString Msg = (Delta > 0) ? TEXT("+1") : TEXT("-1");
-    UKismetSystemLibrary::PrintString(GetWorld(), Msg, true, true, Col, 1.5f);
+    const FLinearColor ToastColor = (ScoreDelta > 0) ? FLinearColor::Green : FLinearColor::Red;
+    const FString ToastMessage = (ScoreDelta > 0) ? TEXT("+1") : TEXT("-1");
+    UKismetSystemLibrary::PrintString(GetWorld(), ToastMessage, true, true, ToastColor, 1.5f);
 }
 
-void AMatchGameManager::Despawn(AActor* NPC)
+void AMatchGameManager::DespawnNPC(AActor* NPCActor)
 {
-    if (!NPC) return;
-    UE_LOG(LogTemp, Warning, TEXT("[Manager] Despawn: %s"), *NPC->GetName());
-    NPCs.Remove(NPC);
-    NPC->Destroy();
-}
-
-void AMatchGameManager::ScheduleNextAssign()
-{
-    const float Delay = FMath::FRandRange(AssignIntervalMin, AssignIntervalMax);
-    UE_LOG(LogTemp, Warning, TEXT("[Manager] ScheduleNextAssign in %.2fs"), Delay);
-    GetWorldTimerManager().SetTimer(AssignTimer, this, &AMatchGameManager::AssignRandomNPC, Delay, false);
-}
-
-void AMatchGameManager::AssignRandomNPC()
-{
-    TArray<AActor*> IdleInside;
-    for (auto& W : NPCs)
+    if (!NPCActor) 
     {
-        if (AActor* A = W.Get())
+        return;
+    }
+    RegisteredNPCs.Remove(NPCActor);
+    NPCActor->Destroy();
+}
+
+void AMatchGameManager::ScheduleNextColorAssignment()
+{
+    const float RandomDelay = FMath::FRandRange(MinimumAssignInterval, MaximumAssignInterval);
+    GetWorldTimerManager().SetTimer(AssignColorTimer, this, &AMatchGameManager::AssignColorToRandomNPC, RandomDelay, false);
+}
+
+void AMatchGameManager::AssignColorToRandomNPC()
+{
+    TArray<AActor*> IdleNPCsInsideArea;
+    for (auto& WeakNPC : RegisteredNPCs)
+    {
+        if (AActor* NPCActor = WeakNPC.Get())
         {
-            if (!IsInsidePlayArea(A->GetActorLocation())) continue;
-            if (UColorMatchComponent* C = GetMatchComp(A))
+            if (!IsInsidePlayArea(NPCActor->GetActorLocation())) 
             {
-                if (C->State == EMatchState::Idle)
+                continue;
+            }
+            if (UColorMatchComponent* MatchComponent = GetColorMatchComponent(NPCActor))
+            {
+                if (MatchComponent->State == EMatchState::Idle)
                 {
-                    IdleInside.Add(A);
+                    IdleNPCsInsideArea.Add(NPCActor);
                 }
             }
         }
     }
 
-    if (IdleInside.Num() > 0)
+    if (IdleNPCsInsideArea.Num() > 0)
     {
-        AActor* Pick = IdleInside[FMath::RandRange(0, IdleInside.Num() - 1)];
-        if (UColorMatchComponent* C = GetMatchComp(Pick))
+        AActor* SelectedNPC = IdleNPCsInsideArea[FMath::RandRange(0, IdleNPCsInsideArea.Num() - 1)];
+        if (UColorMatchComponent* MatchComponent = GetColorMatchComponent(SelectedNPC))
         {
-            static const EMatchColor COLORS[] = { EMatchColor::Red, EMatchColor::Green, EMatchColor::Blue, EMatchColor::Yellow };
-            const EMatchColor Chosen = COLORS[FMath::RandHelper(4)];
-            UE_LOG(LogTemp, Warning, TEXT("[Manager] Assign %s -> Color %d Looking=1"), *Pick->GetName(), (uint8)Chosen);
-            C->Assign(Chosen, true);
+            static const EMatchColor AVAILABLE_COLORS[] = { EMatchColor::Red, EMatchColor::Green, EMatchColor::Blue, EMatchColor::Yellow };
+            const EMatchColor RandomColor = AVAILABLE_COLORS[FMath::RandHelper(4)];
+            MatchComponent->Assign(RandomColor, true);
         }
     }
     else
     {
-        UE_LOG(LogTemp, Warning, TEXT("[Manager] No idle NPCs inside area to assign."));
+        UE_LOG(LogTemp, Warning, TEXT("No npcs inside area"));
     }
 
-    ScheduleNextAssign();
+    ScheduleNextColorAssignment();
 }

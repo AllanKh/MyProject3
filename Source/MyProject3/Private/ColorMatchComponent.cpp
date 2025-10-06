@@ -12,47 +12,47 @@ void UColorMatchComponent::BeginPlay()
 {
     Super::BeginPlay();
 
-    if (bUseDebugLabel)
+    if (bShouldUseDebugLabel)
     {
-        DebugText = NewObject<UTextRenderComponent>(GetOwner(), TEXT("MatchDebugText"));
-        if (DebugText)
+        DebugTextComponent = NewObject<UTextRenderComponent>(GetOwner(), TEXT("MatchDebugText"));
+        if (DebugTextComponent)
         {
-            DebugText->SetupAttachment(GetOwner()->GetRootComponent());
-            DebugText->RegisterComponent();
-            DebugText->SetHorizontalAlignment(EHTA_Center);
-            DebugText->SetVerticalAlignment(EVRTA_TextCenter);
-            DebugText->SetWorldSize(48.f);
-            DebugText->SetTextRenderColor(FColor::White);
-            DebugText->SetRelativeLocation(FVector(0, 0, 120));
-            DebugText->SetHiddenInGame(true);
+            DebugTextComponent->SetupAttachment(GetOwner()->GetRootComponent());
+            DebugTextComponent->RegisterComponent();
+            DebugTextComponent->SetHorizontalAlignment(EHTA_Center);
+            DebugTextComponent->SetVerticalAlignment(EVRTA_TextCenter);
+            DebugTextComponent->SetWorldSize(48.f);
+            DebugTextComponent->SetTextRenderColor(FColor::White);
+            DebugTextComponent->SetRelativeLocation(FVector(0, 0, 120));
+            DebugTextComponent->SetHiddenInGame(true);
         }
     }
 
     RefreshDebugLabel();
-    TryAutoRegister();
+    TryAutoRegisterWithManager();
 }
 
-AMatchGameManager* UColorMatchComponent::FindManager() const
+AMatchGameManager* UColorMatchComponent::FindGameManager() const
 {
-    TArray<AActor*> Found;
-    UGameplayStatics::GetAllActorsOfClass(GetWorld(), AMatchGameManager::StaticClass(), Found);
-    return Found.Num() ? Cast<AMatchGameManager>(Found[0]) : nullptr;
+    TArray<AActor*> FoundManagers;
+    UGameplayStatics::GetAllActorsOfClass(GetWorld(), AMatchGameManager::StaticClass(), FoundManagers);
+    return FoundManagers.Num() ? Cast<AMatchGameManager>(FoundManagers[0]) : nullptr;
 }
 
-void UColorMatchComponent::TryAutoRegister()
+void UColorMatchComponent::TryAutoRegisterWithManager()
 {
-    if (AMatchGameManager* M = FindManager())
+    if (AMatchGameManager* GameManager = FindGameManager())
     {
-        M->RegisterNPC(GetOwner());
+        GameManager->RegisterNPC(GetOwner());
     }
 }
 
-void UColorMatchComponent::Assign(EMatchColor NewColor, bool bLookingForMatch)
+void UColorMatchComponent::Assign(EMatchColor NewColor, bool bIsLookingForMatch)
 {
     CurrentColor = NewColor;
-    State = bLookingForMatch ? EMatchState::LookingForMatch : EMatchState::Idle;
+    State = bIsLookingForMatch ? EMatchState::LookingForMatch : EMatchState::Idle;
     RefreshDebugLabel();
-    OnAssignmentChanged.Broadcast(CurrentColor, bLookingForMatch);
+    OnAssignmentChanged.Broadcast(CurrentColor, bIsLookingForMatch);
 }
 
 void UColorMatchComponent::ClearAssignment()
@@ -63,56 +63,69 @@ void UColorMatchComponent::ClearAssignment()
     OnAssignmentChanged.Broadcast(CurrentColor, false);
 }
 
-void UColorMatchComponent::HandleMatched(AActor* Other)
+void UColorMatchComponent::HandleMatched(AActor* OtherActor)
 {
     State = EMatchState::Matched;
     RefreshDebugLabel();
-    OnMatchedWith.Broadcast(Other);
+    OnMatchedWith.Broadcast(OtherActor);
 }
 
-void UColorMatchComponent::HandleMismatch(AActor* Other)
+void UColorMatchComponent::HandleMismatch(AActor* OtherActor)
 {
     State = EMatchState::Dead;
     RefreshDebugLabel();
-    OnMismatchWith.Broadcast(Other);
+    OnMismatchWith.Broadcast(OtherActor);
 }
 
-static FColor ToFColor(EMatchColor C)
+static FColor ConvertMatchColorToFColor(EMatchColor MatchColor)
 {
-    switch (C)
+    switch (MatchColor)
     {
     default:
-    case EMatchColor::None:   return FColor::White;
-    case EMatchColor::Red:    return FColor::Red;
-    case EMatchColor::Green:  return FColor::Green;
-    case EMatchColor::Blue:   return FColor::Blue;
-    case EMatchColor::Yellow: return FColor::Yellow;
+    case EMatchColor::None:
+        return FColor::White;
+    case EMatchColor::Red:
+        return FColor::Red;
+    case EMatchColor::Green:
+        return FColor::Green;
+    case EMatchColor::Blue:
+        return FColor::Blue;
+    case EMatchColor::Yellow:
+        return FColor::Yellow;
     }
 }
 
-static FText ToText(EMatchColor C)
+static FText ConvertMatchColorToText(EMatchColor MatchColor)
 {
-    switch (C)
+    switch (MatchColor)
     {
     default:
-    case EMatchColor::None:   return FText::FromString(TEXT("NONE"));
-    case EMatchColor::Red:    return FText::FromString(TEXT("RED"));
-    case EMatchColor::Green:  return FText::FromString(TEXT("GREEN"));
-    case EMatchColor::Blue:   return FText::FromString(TEXT("BLUE"));
-    case EMatchColor::Yellow: return FText::FromString(TEXT("YELLOW"));
+    case EMatchColor::None:
+        return FText::FromString(TEXT("NONE"));
+    case EMatchColor::Red:
+        return FText::FromString(TEXT("RED"));
+    case EMatchColor::Green:
+        return FText::FromString(TEXT("GREEN"));
+    case EMatchColor::Blue:
+        return FText::FromString(TEXT("BLUE"));
+    case EMatchColor::Yellow:
+        return FText::FromString(TEXT("YELLOW"));
     }
 }
 
 void UColorMatchComponent::RefreshDebugLabel()
 {
-    if (!DebugText) return;
-
-    const bool bShow = (CurrentColor != EMatchColor::None) && (State == EMatchState::LookingForMatch);
-    DebugText->SetHiddenInGame(!bShow);
-
-    if (bShow)
+    if (!DebugTextComponent) 
     {
-        DebugText->SetText(ToText(CurrentColor));
-        DebugText->SetTextRenderColor(ToFColor(CurrentColor));
+        return;
+    }
+
+    const bool bShouldShowLabel = (CurrentColor != EMatchColor::None) && (State == EMatchState::LookingForMatch);
+    DebugTextComponent->SetHiddenInGame(!bShouldShowLabel);
+
+    if (bShouldShowLabel)
+    {
+        DebugTextComponent->SetText(ConvertMatchColorToText(CurrentColor));
+        DebugTextComponent->SetTextRenderColor(ConvertMatchColorToFColor(CurrentColor));
     }
 }

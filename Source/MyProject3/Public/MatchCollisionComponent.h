@@ -16,43 +16,43 @@ public:
     UMatchCollisionComponent();
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Match|Collision")
-    UPrimitiveComponent* HitPrimitive = nullptr;
+    UPrimitiveComponent* CollisionPrimitive = nullptr;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Match|Collision", meta = (ClampMin = "0"))
-    float MinHitSpeed = 20.f;
+    float MinimumHitSpeed = 20.f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Match|Collision")
-    bool bRequireInsidePlayArea = false;
+    bool bMustBeInsidePlayArea = false;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Match|Collision|Debug")
-    bool bDebugLog = true;
+    bool bShouldDebugLog = true;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Match|Collision|Debug")
-    bool bBindAllPrimitivesForDebug = true;
+    bool bShouldBindAllPrimitivesForDebug = true;
 
 protected:
     virtual void BeginPlay() override;
 
 private:
     UFUNCTION()
-    void OnActorHit(AActor* SelfActor, AActor* OtherActor, FVector NormalImpulse, const FHitResult& Hit);
+    void OnActorHit(AActor* SelfActor, AActor* OtherActor, FVector NormalImpulse, const FHitResult& HitResult);
 
     UFUNCTION()
-    void OnCompHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,
-        FVector NormalImpulse, const FHitResult& Hit);
+    void OnComponentHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent,
+        FVector NormalImpulse, const FHitResult& HitResult);
 
     UFUNCTION()
-    void OnCompBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
-        UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
+    void OnComponentBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+        UPrimitiveComponent* OtherComponent, int32 OtherBodyIndex, bool bFromSweep,
         const FHitResult& SweepResult);
 
-    bool ShouldScoreThisHit(AActor* OtherActor, float& OutRelSpeed, bool& bMyLooking, bool& bOtherLooking,
-        uint8& MyColor, uint8& OtherColor, bool& bInsideAreaBoth) const;
+    bool ShouldScoreThisHit(AActor* OtherActor, float& OutRelativeSpeed, bool& bIsMyActorLooking, bool& bIsOtherActorLooking,
+        uint8& MyActorColor, uint8& OtherActorColor, bool& bAreBothActorsInsideArea) const;
 
-    void ForwardToManager(AActor* SelfActor, AActor* OtherActor) const;
+    void ForwardCollisionToManager(AActor* SelfActor, AActor* OtherActor) const;
 
-    UColorMatchComponent* GetMatch(AActor* Act) const;
+    UColorMatchComponent* GetColorMatchComponent(AActor* Actor) const;
 
-    void BindOnePrimitive(UPrimitiveComponent* Prim);
-    void LogComponentSetup(UPrimitiveComponent* Prim, const TCHAR* Tag) const;
+    void BindEventsForOnePrimitive(UPrimitiveComponent* Primitive);
+    void LogComponentSetup(UPrimitiveComponent* Primitive, const TCHAR* LogTag) const;
 };

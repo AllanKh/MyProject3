@@ -27,38 +27,37 @@ public:
     TSubclassOf<UUserWidget> ScoreToastClass;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Match|Rules")
-    float AssignIntervalMin = 1.5f;
+    float MinimumAssignInterval = 1.5f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Match|Rules")
-    float AssignIntervalMax = 4.0f;
+    float MaximumAssignInterval = 4.0f;
 
     UFUNCTION(BlueprintCallable, Category = "Match|NPC")
-    void RegisterNPC(AActor* NPC);
+    void RegisterNPC(AActor* NPCActor);
 
     UFUNCTION(BlueprintCallable, Category = "Match|NPC")
-    void UnregisterNPC(AActor* NPC);
+    void UnregisterNPC(AActor* NPCActor);
 
     UFUNCTION(BlueprintCallable, Category = "Match|Rules")
-    void HandleNPCVsNPCCollision(AActor* A, AActor* B);
+    void HandleNPCVsNPCCollision(AActor* FirstActor, AActor* SecondActor);
 
-    // MADE PUBLIC so collision component can query it
-    bool IsInsidePlayArea(const FVector& WorldPos) const;
+    bool IsInsidePlayArea(const FVector& WorldPosition) const;
 
 protected:
     virtual void BeginPlay() override;
 
 private:
     UPROPERTY()
-    TArray<TWeakObjectPtr<AActor>> NPCs;
+    TArray<TWeakObjectPtr<AActor>> RegisteredNPCs;
 
-    FTimerHandle AssignTimer;
+    FTimerHandle AssignColorTimer;
 
-    void ScheduleNextAssign();
-    void AssignRandomNPC();
+    void ScheduleNextColorAssignment();
+    void AssignColorToRandomNPC();
 
-    static UColorMatchComponent* GetMatchComp(AActor* Actor);
-    static bool ColorsMatchAndBothLooking(UColorMatchComponent* A, UColorMatchComponent* B, EMatchColor& Out);
-    void AddScore(int32 Delta);
-    void ToastDelta(int32 Delta);
-    void Despawn(AActor* NPC);
+    static UColorMatchComponent* GetColorMatchComponent(AActor* Actor);
+    static bool DoColorsMatchAndAreBothLooking(UColorMatchComponent* FirstComponent, UColorMatchComponent* SecondComponent, EMatchColor& OutMatchedColor);
+    void AddToScore(int32 ScoreDelta);
+    void ShowScoreToast(int32 ScoreDelta);
+    void DespawnNPC(AActor* NPCActor);
 };
