@@ -21,10 +21,10 @@ public:
     UPrimitiveComponent* TargetComponent = nullptr;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Grab|Physics")
-    float LinearDamping = 200.f;
+    float LinearDamping = 500.f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Grab|Physics")
-    float LinearStiffness = 750.f;
+    float LinearStiffness = 2000.f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Grab|Physics")
     float AngularDamping = 500.f;
