@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
+#include "GameFramework/FloatingPawnMovement.h"
 #include "BaseNPC.generated.h"
 
 UCLASS()
@@ -19,14 +20,23 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	//
+
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+	virtual void MoveTo(const FVector& Target, float DeltaTime);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Movement")
+	float Speed = 300.f;
 
 	UPROPERTY(VisibleAnywhere)
 	USceneComponent* SceneRoot;
 
 	UPROPERTY(VisibleAnywhere)
 	USkeletalMeshComponent* Mesh;     
+
+	UPROPERTY(VisibleAnywhere)
+	UFloatingPawnMovement* MovementComponent;
 
 };
