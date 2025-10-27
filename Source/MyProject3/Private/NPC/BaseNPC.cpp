@@ -20,7 +20,7 @@ ABaseNPC::ABaseNPC()
 	Mesh->SetupAttachment(RootComponent);
 
 	// Call AI Controller Class
-	static ConstructorHelpers::FClassFinder<AAIController> AIControllerBP(TEXT("/Game/AI/Blueprints/NPC/BP_NPC_AI"));
+	static ConstructorHelpers::FClassFinder<AAIController> AIControllerBP(TEXT("/Game/AI/Blueprints/NPC/BP_NPC_AI_TEST"));
 	if (AIControllerBP.Succeeded())
 	{
 		AIControllerClass = AIControllerBP.Class;
@@ -28,8 +28,10 @@ ABaseNPC::ABaseNPC()
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 
 	// Movement Component
-	MovementComponent = CreateDefaultSubobject<UFloatingPawnMovement>(TEXT("MovementComponent"));
-	MovementComponent->UpdatedComponent = RootComponent;
+	/*MovementComponent = CreateDefaultSubobject<UNavMovementComponent>(TEXT("MovementComponent"));
+	MovementComponent->UpdatedComponent = RootComponent;*/
+
+
 }
 
 // Called when the game starts or when spawned
@@ -45,15 +47,23 @@ void ABaseNPC::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
-void ABaseNPC::MoveTo(const FVector& Target, float DeltaTime)
+void ABaseNPC::MoveTo(const FVector& TargetLocation, float DeltaTime)
 {
 
-	FVector Direction = (Target - GetActorLocation()).GetSafeNormal();
+	FVector Direction = (TargetLocation - GetActorLocation()).GetSafeNormal();
 	FVector NewLocation = GetActorLocation() + Direction * Speed * DeltaTime;
 
 	// Simple Collision Check
 	SetActorLocation(NewLocation, true);
 	SetActorRotation(Direction.Rotation());
+}
+
+void ABaseNPC::EnterRagdoll()
+{
+}
+
+void ABaseNPC::ExitRagdoll()
+{
 }
 
 

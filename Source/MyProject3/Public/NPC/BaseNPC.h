@@ -4,17 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
-#include "GameFramework/FloatingPawnMovement.h"
+#include "GameFramework/NavMovementComponent.h"
 #include "BaseNPC.generated.h"
 
 UCLASS()
 class MYPROJECT3_API ABaseNPC : public APawn
 {
 	GENERATED_BODY()
-
-public:
-	// Sets default values for this pawn's properties
-	ABaseNPC();
 
 protected:
 	// Called when the game starts or when spawned
@@ -23,9 +19,19 @@ protected:
 	//
 
 public:	
+
+	ABaseNPC();
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+
+	UFUNCTION(BlueprintCallable, Category="Movement")
 	virtual void MoveTo(const FVector& Target, float DeltaTime);
+
+	UFUNCTION(BlueprintCallable, Category="Behavior")
+	virtual void EnterRagdoll();
+
+	UFUNCTION(BlueprintCallable, Category="Behavior")
+	virtual void ExitRagdoll();
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Movement")
 	float Speed = 300.f;
@@ -36,7 +42,7 @@ public:
 	UPROPERTY(VisibleAnywhere)
 	USkeletalMeshComponent* Mesh;     
 
-	UPROPERTY(VisibleAnywhere)
-	UFloatingPawnMovement* MovementComponent;
+	/*UPROPERTY(VisibleAnywhere)
+	UNavMovementComponent* MovementComponent;*/
 
 };
