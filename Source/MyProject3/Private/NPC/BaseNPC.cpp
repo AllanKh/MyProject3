@@ -28,8 +28,8 @@ ABaseNPC::ABaseNPC()
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 
 	// Movement Component
-	/*MovementComponent = CreateDefaultSubobject<UNavMovementComponent>(TEXT("MovementComponent"));
-	MovementComponent->UpdatedComponent = RootComponent;*/
+	MovementComponent = CreateDefaultSubobject<UFloatingPawnMovement>(TEXT("MovementComponent"));
+	MovementComponent->UpdatedComponent = RootComponent;
 
 
 }
@@ -45,18 +45,46 @@ void ABaseNPC::BeginPlay()
 void ABaseNPC::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	//Apply Gravity
+
+	if (!Mesh->IsSimulatingPhysics())
+	{
+		FVector beamStart = GetActorLocation();
+		FVector beamEnd = beamStart - FVector(0.0f, 0.0f, 50.0f);
+
+		FHitResult hit;
+		FCollisionQueryParams params;
+		params.AddIgnoredActor(this);
+
+		bool hitGround = GetWorld()->LineTraceSingleByChannel(hit, beamStart, beamEnd, ECC_Visibility, params);
+		if (!hitGround)
+		{
+		FVector newLocation = GetActorLocation();
+		newLocation.Z -= 982.0f * DeltaTime;
+		SetActorLocation(newLocation, true);
+		}
+		else
+		{
+			FVector newLocation = GetActorLocation();
+			newLocation.Z = hit.ImpactPoint.Z + 10.0f;
+			SetActorLocation(newLocation, true);
+		}
+	}
 }
 
-void ABaseNPC::MoveTo(const FVector& TargetLocation, float DeltaTime)
-{
-
-	FVector Direction = (TargetLocation - GetActorLocation()).GetSafeNormal();
-	FVector NewLocation = GetActorLocation() + Direction * Speed * DeltaTime;
-
-	// Simple Collision Check
-	SetActorLocation(NewLocation, true);
-	SetActorRotation(Direction.Rotation());
-}
+//void ABaseNPC::MoveTo(const FVector& TargetLocation, float DeltaTime)
+//{
+//
+//	//FVector Direction = (TargetLocation - GetActorLocation()).GetSafeNormal();
+//	//FVector NewLocation = GetActorLocation() + Direction * Speed * DeltaTime;
+//
+//	//// Simple Collision Check
+//	//SetActorLocation(NewLocation, true);
+//	//SetActorRotation(Direction.Rotation());
+//
+//	//NOT IN USE ATM
+//}
 
 void ABaseNPC::EnterRagdoll()
 {
@@ -64,6 +92,11 @@ void ABaseNPC::EnterRagdoll()
 
 void ABaseNPC::ExitRagdoll()
 {
+}
+
+bool ABaseNPC::GetRagdollState()
+{
+	return ragdollState;
 }
 
 
