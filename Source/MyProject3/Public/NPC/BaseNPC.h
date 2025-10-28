@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/FloatingPawnMovement.h"
+#include "MyProject3/GrabbableComponent.h"
 #include "BaseNPC.generated.h"
 
 /*
@@ -21,7 +22,6 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-	//
 
 public:	
 
@@ -29,13 +29,16 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	//UFUNCTION(BlueprintCallable, Category="Movement")
-	//virtual void MoveTo(const FVector& Target, float DeltaTime);
+	UFUNCTION()
+	void HandleGrabbed();
 
-	UFUNCTION(BlueprintCallable, Category="Behavior")
+	UFUNCTION()
+	void HandleReleased();
+
+	UFUNCTION()
 	virtual void EnterRagdoll();
 
-	UFUNCTION(BlueprintCallable, Category="Behavior")
+	UFUNCTION()
 	virtual void ExitRagdoll();
 
 	UFUNCTION(BlueprintCallable, Category="Behavior")
@@ -55,5 +58,8 @@ public:
 
 	UPROPERTY(VisibleAnywhere)
 	UFloatingPawnMovement* MovementComponent;
+
+	UPROPERTY(VisibleAnywhere)
+	UGrabbableComponent* GrabbableComponent;
 
 };

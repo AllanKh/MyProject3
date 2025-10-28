@@ -38,7 +38,7 @@ public:
     UPROPERTY(BlueprintReadOnly, Category = "Grab")
     bool IsBeingGrabbed = false;
 
-    UPROPERTY(BlueprintAssignable, Category = "Grab|Events")
+    UPROPERTY(BlueprintAssignable)
     FOnGrabbedEvent OnGrabbed;
 
     UPROPERTY(BlueprintAssignable, Category = "Grab|Events")
