@@ -42,12 +42,6 @@ ABaseNPC::ABaseNPC()
 void ABaseNPC::BeginPlay()
 {
     Super::BeginPlay();
-
-    if (GrabbableComponent)
-    {
-        GEngine->AddOnScreenDebugMessage(-1, 5.9f, FColor::Yellow, TEXT("HELLO"));
-    }
-    
 }
 
 // Called every frame
@@ -57,8 +51,6 @@ void ABaseNPC::Tick(float DeltaTime)
 
     //Apply Gravity
 
-    if (!Mesh->IsSimulatingPhysics())
-    {
         FVector beamStart = GetActorLocation();
         FVector beamEnd = beamStart - FVector(0.0f, 0.0f, 50.0f);
 
@@ -67,39 +59,68 @@ void ABaseNPC::Tick(float DeltaTime)
         params.AddIgnoredActor(this);
 
         bool hitGround = GetWorld()->LineTraceSingleByChannel(hit, beamStart, beamEnd, ECC_Visibility, params);
+
+    if (!Mesh->IsSimulatingPhysics())
+    {
         if (!hitGround)
         {
         FVector newLocation = GetActorLocation();
         newLocation.Z -= 982.0f * DeltaTime;
         SetActorLocation(newLocation, true);
+        hasLanded = false;
         }
         else
         {
             FVector newLocation = GetActorLocation();
             newLocation.Z = hit.ImpactPoint.Z + 10.0f;
             SetActorLocation(newLocation, true);
+            hasLanded = true;
         }
-
-
     }
-}
-
-void ABaseNPC::HandleGrabbed()
-{
-
-}
-
-void ABaseNPC::HandleReleased()
-{
-
+    else
+    {
+        if (hitGround)
+        {
+            if (ragdollState)
+            {
+                GEngine->AddOnScreenDebugMessage(-1, 5.9f, FColor::Yellow, TEXT("RELEASED"));
+                GetWorldTimerManager().SetTimer(RagdollRecoveryTimer, this, &ABaseNPC::ExitRagdoll, 3.0f, false);
+                hasLanded = true;
+            }
+        }
+        else
+        {
+            hasLanded = false;
+        }
+    }
 }
 
 void ABaseNPC::EnterRagdoll()
 {
+    ragdollState = true;
+
+    if (AAIController* AiCon = Cast<AAIController>(GetController()))
+    {
+        AiCon->StopMovement();
+    }
+
+    if (MovementComponent)
+    {
+        MovementComponent->Deactivate();
+    }
+
+    bUseControllerRotationYaw = false;
+
+    GEngine->AddOnScreenDebugMessage(-1, 5.9f, FColor::Yellow, TEXT("Entered Ragdoll"));
+
+    OnEnterRagdoll.Broadcast();
+
 }
 
 void ABaseNPC::ExitRagdoll()
 {
+    GEngine->AddOnScreenDebugMessage(-1, 5.9f, FColor::Yellow, TEXT("RELEASED"));
+    OnExitRagdoll.Broadcast();
 }
 
 bool ABaseNPC::GetRagdollState()

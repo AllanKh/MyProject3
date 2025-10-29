@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -12,6 +10,9 @@
 THIS CLASS IS THE BASE FOR ALL OF THE NPCS IN THIS GAME, AT THE MOMENT OF WRITING THIS SECION, THIS CLASS IS NOT A COMPLETE BASE CLASS.
 WILL BE UPDATED LATER ON TO SUB CLASSES ONCE BASE STRUCTURE IS COMPLETE.
 */
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnEnterRagdoll);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnExitRagdoll);
 
 UCLASS()
 class MYPROJECT3_API ABaseNPC : public APawn
@@ -29,19 +30,19 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	UFUNCTION()
-	void HandleGrabbed();
+	UPROPERTY(BlueprintAssignable, Category="Ragdoll")
+	FOnEnterRagdoll OnEnterRagdoll;
 
-	UFUNCTION()
-	void HandleReleased();
+	UPROPERTY(BlueprintAssignable, Category = "Ragdoll")
+	FOnExitRagdoll OnExitRagdoll;
 
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable, Category="Ragdoll")
 	virtual void EnterRagdoll();
 
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable, Category="Ragdoll")
 	virtual void ExitRagdoll();
 
-	UFUNCTION(BlueprintCallable, Category="Behavior")
+	UFUNCTION(BlueprintCallable, Category="Ragdoll")
 	bool GetRagdollState();
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Movement")
@@ -49,6 +50,11 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	bool ragdollState = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Movement")
+	bool hasLanded = false;
+
+	FTimerHandle RagdollRecoveryTimer;
 
 	UPROPERTY(VisibleAnywhere)
 	USceneComponent* SceneRoot;
@@ -59,7 +65,7 @@ public:
 	UPROPERTY(VisibleAnywhere)
 	UFloatingPawnMovement* MovementComponent;
 
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	UGrabbableComponent* GrabbableComponent;
 
 };
