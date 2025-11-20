@@ -12,6 +12,7 @@ public class MyProject3 : ModuleRules
             "CoreUObject",
             "Engine",
             "InputCore",
+            "AIModule",
             "EnhancedInput",
             "UMG"
         });
