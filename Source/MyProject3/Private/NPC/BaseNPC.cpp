@@ -6,7 +6,7 @@
 #include "AIController.h"
 #include "MyProject3/GrabbableComponent.h"
 
-// Sets default values
+// important checK HEADER!!!!!
 ABaseNPC::ABaseNPC()
 {
     // Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
