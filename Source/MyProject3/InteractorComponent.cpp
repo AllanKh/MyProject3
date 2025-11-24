@@ -229,13 +229,13 @@ void UInteractorComponent::InputAltRotateReleased()
 // called when player scrolls mouse wheel up. brings grabbed object closer
 void UInteractorComponent::InputScrollUp()
 {
-    CurrentDepth = FMath::Clamp(CurrentDepth + 100.f, 50.f, 3000.f);
+    CurrentDepth = FMath::Clamp(CurrentDepth + 250.f, 50.f, 20000.f);
     UE_LOG(LogTemp, Warning, TEXT("Scroll UP: depth=%f (closer)"), CurrentDepth);
 }
 
 // called when player scrolls mouse wheel down. pushes grabbed object farther
 void UInteractorComponent::InputScrollDown()
 {
-    CurrentDepth = FMath::Clamp(CurrentDepth - 100.f, 50.f, 3000.f);
+    CurrentDepth = FMath::Clamp(CurrentDepth - 250.f, 50.f, 20000.f);
     UE_LOG(LogTemp, Warning, TEXT("Scroll DOWN: depth=%f (farther)"), CurrentDepth);
 }
