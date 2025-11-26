@@ -42,12 +42,10 @@ void ACameraCyclerPlayerController::SetupInputComponent()
 {
     Super::SetupInputComponent();
 
-    UE_LOG(LogTemp, Warning, TEXT("CameraCyclerPlayerController::SetupInputComponent"));
-
     UEnhancedInputComponent* EIC = Cast<UEnhancedInputComponent>(InputComponent);
     if (!EIC)
     {
-        UE_LOG(LogTemp, Error, TEXT("InputComponent is NOT an EnhancedInputComponent!"));
+        UE_LOG(LogTemp, Error, TEXT("InputComponent is not enhanced input"));
         return;
     }
 
@@ -58,7 +56,7 @@ void ACameraCyclerPlayerController::SetupInputComponent()
     }
     else
     {
-        UE_LOG(LogTemp, Warning, TEXT("NextCameraAction is NOT set!"));
+        UE_LOG(LogTemp, Warning, TEXT("NextCameraAction not set"));
     }
 
     if (PrevCameraAction)
@@ -68,7 +66,7 @@ void ACameraCyclerPlayerController::SetupInputComponent()
     }
     else
     {
-        UE_LOG(LogTemp, Warning, TEXT("PrevCameraAction is NOT set!"));
+        UE_LOG(LogTemp, Warning, TEXT("PrevCameraAction not set"));
     }
 }
 
@@ -80,7 +78,7 @@ void ACameraCyclerPlayerController::BuildCameraList()
     TArray<AActor*> FoundActors;
     UGameplayStatics::GetAllActorsOfClass(GetWorld(), ACameraActor::StaticClass(), FoundActors);
 
-    UE_LOG(LogTemp, Warning, TEXT("BuildCameraList: Found %d ACameraActor in world"), FoundActors.Num());
+    UE_LOG(LogTemp, Warning, TEXT("BuildCameraList: Found %d camera in world"), FoundActors.Num());
 
     const FName TagName(TEXT("GameCamera"));
 
@@ -90,7 +88,7 @@ void ACameraCyclerPlayerController::BuildCameraList()
         {
             if (Cam->ActorHasTag(TagName))
             {
-                UE_LOG(LogTemp, Warning, TEXT("  -> Added %s as GameCamera"), *Cam->GetName());
+                UE_LOG(LogTemp, Warning, TEXT("Added %s as GameCamera"), *Cam->GetName());
                 GameCameras.Add(Cam);
             }
         }
@@ -101,7 +99,7 @@ void ACameraCyclerPlayerController::BuildCameraList()
             return A.GetName() < B.GetName();
         });
 
-    UE_LOG(LogTemp, Warning, TEXT("BuildCameraList: Final GameCameras.Num = %d"), GameCameras.Num());
+    UE_LOG(LogTemp, Warning, TEXT("BuildCameraList: Total GameCameras: %d"), GameCameras.Num());
 }
 
 void ACameraCyclerPlayerController::SwitchToCamera(int32 NewIndex, float CustomBlendTime)
@@ -118,7 +116,7 @@ void ACameraCyclerPlayerController::SwitchToCamera(int32 NewIndex, float CustomB
         Params.BlendFunction = BlendFunction;
         Params.BlendExp = BlendExp;
 
-        UE_LOG(LogTemp, Warning, TEXT("SwitchToCamera: Index %d -> %s"),
+        UE_LOG(LogTemp, Warning, TEXT("SwitchToCamera: %d -> %s"),
             NewIndex, *TargetCam->GetName());
 
         SetViewTarget(TargetCam, Params);
@@ -129,13 +127,13 @@ void ACameraCyclerPlayerController::NextCamera()
 {
     if (GameCameras.Num() == 0)
     {
-        UE_LOG(LogTemp, Warning, TEXT("NextCamera: camera list empty, rebuilding..."));
+        UE_LOG(LogTemp, Warning, TEXT("NextCamera: camera list empty, rebuilding"));
         BuildCameraList();
     }
 
     if (GameCameras.Num() == 0)
     {
-        UE_LOG(LogTemp, Warning, TEXT("NextCamera: still no cameras after rebuild"));
+        UE_LOG(LogTemp, Warning, TEXT("NextCamera: still no cameras after rebuild???"));
         return;
     }
 
@@ -152,13 +150,13 @@ void ACameraCyclerPlayerController::PreviousCamera()
 {
     if (GameCameras.Num() == 0)
     {
-        UE_LOG(LogTemp, Warning, TEXT("PreviousCamera: camera list empty, rebuilding..."));
+        UE_LOG(LogTemp, Warning, TEXT("PreviousCamera: camera list empty, rebuilding"));
         BuildCameraList();
     }
 
     if (GameCameras.Num() == 0)
     {
-        UE_LOG(LogTemp, Warning, TEXT("PreviousCamera: still no cameras after rebuild"));
+        UE_LOG(LogTemp, Warning, TEXT("PreviousCamera: still no cameras after rebuild???"));
         return;
     }
 
