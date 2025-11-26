@@ -113,6 +113,7 @@ bool UInteractorComponent::TraceFromMouse(FHitResult& OutHit)
 // calculates where in 3D space the cursor should place objects based on scroll depth
 FVector UInteractorComponent::GetTargetPointInWorld(const FVector& RayOrigin, const FVector& RayDirection) const
 {
+    // Use the current mouse ray, but at a fixed depth
     return RayOrigin + RayDirection * CurrentDepth;
 }
 
