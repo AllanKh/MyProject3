@@ -8,7 +8,6 @@ UInteractorComponent::UInteractorComponent()
     PrimaryComponentTick.bCanEverTick = true;
 }
 
-
 void UInteractorComponent::BeginPlay()
 {
     Super::BeginPlay();
@@ -17,8 +16,8 @@ void UInteractorComponent::BeginPlay()
     UE_LOG(LogTemp, Warning, TEXT("InteractorComponent BeginPlay - Component initialized"));
 }
 
-
-void UInteractorComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+void UInteractorComponent::TickComponent(float DeltaTime, ELevelTick TickType,
+    FActorComponentTickFunction* ThisTickFunction)
 {
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
@@ -102,6 +101,7 @@ bool UInteractorComponent::TraceFromMouse(FHitResult& OutHit)
 
     // draw debug lines to visualize raycast. green if hit something, red if not
     DrawDebugLine(GetWorld(), Origin, End, bHit ? FColor::Green : FColor::Red, false, 0.1f, 0, 0.2f);
+
     if (bHit)
     {
         DrawDebugSphere(GetWorld(), OutHit.ImpactPoint, 5.f, 8, FColor::Yellow, false, 0.1f);
@@ -113,7 +113,7 @@ bool UInteractorComponent::TraceFromMouse(FHitResult& OutHit)
 // calculates where in 3D space the cursor should place objects based on scroll depth
 FVector UInteractorComponent::GetTargetPointInWorld(const FVector& RayOrigin, const FVector& RayDirection) const
 {
-    // Use the current mouse ray, but at a fixed depth
+    // Use current ray direction, but at the stored depth
     return RayOrigin + RayDirection * CurrentDepth;
 }
 
@@ -227,16 +227,16 @@ void UInteractorComponent::InputAltRotateReleased()
     UE_LOG(LogTemp, Warning, TEXT("Alt Rotate Released"));
 }
 
-// called when player scrolls mouse wheel up. brings grabbed object closer
+// called when player scrolls mouse wheel up. pushes grabbed object farther
 void UInteractorComponent::InputScrollUp()
 {
     CurrentDepth = FMath::Clamp(CurrentDepth + 250.f, 50.f, 20000.f);
-    UE_LOG(LogTemp, Warning, TEXT("Scroll UP: depth=%f (closer)"), CurrentDepth);
+    UE_LOG(LogTemp, Warning, TEXT("Scroll UP: depth=%f (farther)"), CurrentDepth);
 }
 
-// called when player scrolls mouse wheel down. pushes grabbed object farther
+// called when player scrolls mouse wheel down. brings grabbed object closer
 void UInteractorComponent::InputScrollDown()
 {
     CurrentDepth = FMath::Clamp(CurrentDepth - 250.f, 50.f, 20000.f);
-    UE_LOG(LogTemp, Warning, TEXT("Scroll DOWN: depth=%f (farther)"), CurrentDepth);
+    UE_LOG(LogTemp, Warning, TEXT("Scroll DOWN: depth=%f (closer)"), CurrentDepth);
 }

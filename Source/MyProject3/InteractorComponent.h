@@ -45,7 +45,8 @@ protected:
     virtual void BeginPlay() override;
 
 public:
-    virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+    virtual void TickComponent(float DeltaTime, ELevelTick TickType,
+        FActorComponentTickFunction* ThisTickFunction) override;
 
 private:
     TScriptInterface<IInteractable> CurrentHover;
@@ -53,10 +54,16 @@ private:
     FHitResult CachedHit;
     FVector2D LastMousePos = FVector2D::ZeroVector;
     bool bAltRotateHeld = false;
+
     float CurrentDepth = 400.f;
 
     bool GetMouseRay(FVector& OutOrigin, FVector& OutDirection) const;
+
     bool TraceFromMouse(FHitResult& OutHit);
+
+    // calculates where in 3D space the cursor should place objects based on scroll depth
     FVector GetTargetPointInWorld(const FVector& RayOrigin, const FVector& RayDirection) const;
+
+    // handles hover state changes. checks if mouse is over interactable object
     void UpdateHover(const FHitResult& Hit);
 };
