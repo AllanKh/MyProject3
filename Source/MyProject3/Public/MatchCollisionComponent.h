@@ -1,4 +1,5 @@
 #pragma once
+
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "MatchCollisionComponent.generated.h"
@@ -14,6 +15,10 @@ class MYPROJECT3_API UMatchCollisionComponent : public UActorComponent
 
 public:
     UMatchCollisionComponent();
+
+    // whether this component is currently active (collision & processing enabled)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Match|Collision")
+    bool bIsComponentEnabled = true;
 
     // which primitive component to use for collision detection
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Match|Collision")

@@ -8,12 +8,16 @@
 
 UMatchCollisionComponent::UMatchCollisionComponent()
 {
-    PrimaryComponentTick.bCanEverTick = false;
+    // allow this component to tick if we ever add TickComponent
+    PrimaryComponentTick.bCanEverTick = true;
 }
 
 void UMatchCollisionComponent::BeginPlay()
 {
     Super::BeginPlay();
+
+    // respect the enabled flag for ticking
+    SetComponentTickEnabled(bIsComponentEnabled);
 
     TArray<UPrimitiveComponent*> PrimitivesToBind;
 
@@ -90,6 +94,7 @@ void UMatchCollisionComponent::LogComponentSetup(UPrimitiveComponent* Primitive,
     const auto CollisionEnabled = Primitive->GetCollisionEnabled();
     const bool bGeneratesOverlap = Primitive->GetGenerateOverlapEvents();
     const bool bNotifiesRigidBody = Primitive->BodyInstance.bNotifyRigidBodyCollision;
+
 }
 
 // finds color match component on an actor
@@ -185,6 +190,11 @@ void UMatchCollisionComponent::ForwardCollisionToManager(AActor* SelfActor, AAct
 // called when actor hit event fires
 void UMatchCollisionComponent::OnActorHit(AActor* SelfActor, AActor* OtherActor, FVector NormalImpulse, const FHitResult& HitResult)
 {
+    if (!bIsComponentEnabled)
+    {
+        return;
+    }
+
     float RelativeSpeed = 0.f;
     bool bIsMyActorLooking = false, bIsOtherActorLooking = false;
     uint8 MyActorColor = 0, OtherActorColor = 0;
@@ -200,6 +210,11 @@ void UMatchCollisionComponent::OnActorHit(AActor* SelfActor, AActor* OtherActor,
 // called when component hit event fires
 void UMatchCollisionComponent::OnComponentHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& HitResult)
 {
+    if (!bIsComponentEnabled)
+    {
+        return;
+    }
+
     float RelativeSpeed = 0.f;
     bool bIsMyActorLooking = false, bIsOtherActorLooking = false;
     uint8 MyActorColor = 0, OtherActorColor = 0;
@@ -215,6 +230,11 @@ void UMatchCollisionComponent::OnComponentHit(UPrimitiveComponent* HitComponent,
 // called when component overlap event fires
 void UMatchCollisionComponent::OnComponentBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
+    if (!bIsComponentEnabled)
+    {
+        return;
+    }
+
     float RelativeSpeed = 0.f;
     bool bIsMyActorLooking = false, bIsOtherActorLooking = false;
     uint8 MyActorColor = 0, OtherActorColor = 0;

@@ -5,14 +5,18 @@
 
 UColorMatchComponent::UColorMatchComponent()
 {
-    PrimaryComponentTick.bCanEverTick = false;
+    // allow ticking if we ever implement TickComponent
+    PrimaryComponentTick.bCanEverTick = true;
 }
 
 void UColorMatchComponent::BeginPlay()
 {
     Super::BeginPlay();
 
-    // create debug text component if enabled
+    // respect enabled flag for ticking
+    SetComponentTickEnabled(bIsComponentEnabled);
+
+    // create debug text component if enabled in settings
     if (bShouldUseDebugLabel)
     {
         DebugTextComponent = NewObject<UTextRenderComponent>(GetOwner(), TEXT("MatchDebugText"));
@@ -53,6 +57,11 @@ void UColorMatchComponent::TryAutoRegisterWithManager()
 // assigns color and sets state to looking or idle
 void UColorMatchComponent::Assign(EMatchColor NewColor, bool bIsLookingForMatch)
 {
+    if (!bIsComponentEnabled)
+    {
+        return;
+    }
+
     CurrentColor = NewColor;
     State = bIsLookingForMatch ? EMatchState::LookingForMatch : EMatchState::Idle;
     RefreshDebugLabel();
@@ -62,6 +71,11 @@ void UColorMatchComponent::Assign(EMatchColor NewColor, bool bIsLookingForMatch)
 // clears color assignment and returns to idle state
 void UColorMatchComponent::ClearAssignment()
 {
+    if (!bIsComponentEnabled)
+    {
+        return;
+    }
+
     CurrentColor = EMatchColor::None;
     State = EMatchState::Idle;
     RefreshDebugLabel();
@@ -71,6 +85,11 @@ void UColorMatchComponent::ClearAssignment()
 // called when this npc successfully matched with another
 void UColorMatchComponent::HandleMatched(AActor* OtherActor)
 {
+    if (!bIsComponentEnabled)
+    {
+        return;
+    }
+
     State = EMatchState::Matched;
     RefreshDebugLabel();
     OnMatchedWith.Broadcast(OtherActor);
@@ -79,6 +98,11 @@ void UColorMatchComponent::HandleMatched(AActor* OtherActor)
 // called when this npc collided but colors didnt match
 void UColorMatchComponent::HandleMismatch(AActor* OtherActor)
 {
+    if (!bIsComponentEnabled)
+    {
+        return;
+    }
+
     State = EMatchState::Dead;
     RefreshDebugLabel();
     OnMismatchWith.Broadcast(OtherActor);
@@ -131,7 +155,11 @@ void UColorMatchComponent::RefreshDebugLabel()
     }
 
     // only show label when npc has color and is looking for match
-    const bool bShouldShowLabel = (CurrentColor != EMatchColor::None) && (State == EMatchState::LookingForMatch);
+    const bool bShouldShowLabel =
+        bIsComponentEnabled &&
+        (CurrentColor != EMatchColor::None) &&
+        (State == EMatchState::LookingForMatch);
+
     DebugTextComponent->SetHiddenInGame(!bShouldShowLabel);
 
     if (bShouldShowLabel)
