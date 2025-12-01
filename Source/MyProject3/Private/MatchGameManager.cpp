@@ -108,7 +108,7 @@ void AMatchGameManager::HandleNPCVsNPCCollision(AActor* FirstActor, AActor* Seco
         ShowScoreToast(-1);
         FirstMatchComponent->HandleMismatch(SecondActor);
         SecondMatchComponent->HandleMismatch(FirstActor);
-        DespawnNPC(FirstActor);
+        //DespawnNPC(FirstActor);
         DespawnNPC(SecondActor);
     }
 }

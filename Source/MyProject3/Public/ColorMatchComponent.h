@@ -1,4 +1,5 @@
 #pragma once
+
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "EMatchColor.h"
@@ -32,6 +33,10 @@ class MYPROJECT3_API UColorMatchComponent : public UActorComponent
 
 public:
     UColorMatchComponent();
+
+    // whether this component is currently active (match logic & events enabled)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Match|Debug")
+    bool bIsComponentEnabled = true;
 
     // what color this npc is currently assigned
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Match")
