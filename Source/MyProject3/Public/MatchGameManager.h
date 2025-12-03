@@ -42,6 +42,9 @@ public:
     void HandleNPCVsNPCCollision(AActor* FirstActor, AActor* SecondActor);
 
     UFUNCTION(BlueprintImplementableEvent, Category = "Match|NPC")
+    void OnNPCMatch(AActor* FirstActor, AActor* SecondActor);
+
+    UFUNCTION(BlueprintImplementableEvent, Category = "Match|NPC")
     void OnNPCMismatch(AActor* FirstActor, AActor* SecondActor);
 
     bool IsInsidePlayArea(const FVector& WorldPosition) const;
