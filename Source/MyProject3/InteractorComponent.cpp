@@ -100,11 +100,11 @@ bool UInteractorComponent::TraceFromMouse(FHitResult& OutHit)
     bool bHit = GetWorld()->LineTraceSingleByChannel(OutHit, Origin, End, TraceChannel, Params);
 
     // draw debug lines to visualize raycast. green if hit something, red if not
-    DrawDebugLine(GetWorld(), Origin, End, bHit ? FColor::Green : FColor::Red, false, 0.1f, 0, 0.2f);
+    //DrawDebugLine(GetWorld(), Origin, End, bHit ? FColor::Green : FColor::Red, false, 0.1f, 0, 0.2f);
 
     if (bHit)
     {
-        DrawDebugSphere(GetWorld(), OutHit.ImpactPoint, 5.f, 8, FColor::Yellow, false, 0.1f);
+        //DrawDebugSphere(GetWorld(), OutHit.ImpactPoint, 5.f, 8, FColor::Yellow, false, 0.1f);
     }
 
     return bHit;

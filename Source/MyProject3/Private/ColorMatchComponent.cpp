@@ -1,8 +1,12 @@
 #include "ColorMatchComponent.h"
 #include "MatchGameManager.h"
-#include "Components/TextRenderComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/BillboardComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
+
+
 
 UColorMatchComponent::UColorMatchComponent()
 {
@@ -36,12 +40,23 @@ void UColorMatchComponent::BeginPlay()
 
             DebugIconComponent->SetHiddenInGame(true);
         }
+
+        // emoji billboard (for match / mismatch)
+        EmojiComponent = NewObject<UBillboardComponent>(GetOwner(), TEXT("MatchEmoji"));
+        if (EmojiComponent)
+        {
+            EmojiComponent->SetupAttachment(GetOwner()->GetRootComponent());
+            EmojiComponent->RegisterComponent();
+
+            EmojiComponent->SetRelativeLocation(EmojiOffset);
+            EmojiComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+            EmojiComponent->SetHiddenInGame(true);
+        }
     }
 
     RefreshDebugLabel();
     TryAutoRegisterWithManager();
 }
-
 
 // finds the game manager in the world
 AMatchGameManager* UColorMatchComponent::FindGameManager() const
@@ -71,10 +86,10 @@ void UColorMatchComponent::Assign(EMatchColor NewColor, bool bIsLookingForMatch)
     CurrentColor = NewColor;
     State = bIsLookingForMatch ? EMatchState::LookingForMatch : EMatchState::Idle;
 
-    // when NPC starts looking for a match, pick a random icon mesh
+    // when NPC starts looking for a match, pick the mesh for this color
     if (State == EMatchState::LookingForMatch)
     {
-        CurrentIconMesh = GetRandomIconMesh();
+        CurrentIconMesh = GetIconMeshForColor(CurrentColor);
 
         if (DebugIconComponent && CurrentIconMesh)
         {
@@ -86,34 +101,24 @@ void UColorMatchComponent::Assign(EMatchColor NewColor, bool bIsLookingForMatch)
     OnAssignmentChanged.Broadcast(CurrentColor, bIsLookingForMatch);
 }
 
-
-UStaticMesh* UColorMatchComponent::GetRandomIconMesh() const
+// map each color to a specific mesh
+UStaticMesh* UColorMatchComponent::GetIconMeshForColor(EMatchColor Color) const
 {
-    TArray<UStaticMesh*> Candidates;
+    switch (Color)
+    {
+    case EMatchColor::Red:
+        return Mesh_RPGHero_Sword01;
 
-    if (Mesh_RPGHero_Sword01)
-    {
-        Candidates.Add(Mesh_RPGHero_Sword01);
-    }
-    if (Mesh_AnimalHero_Shield01)
-    {
-        Candidates.Add(Mesh_AnimalHero_Shield01);
-    }
-    if (Mesh_TinyHero_Sword02)
-    {
-        Candidates.Add(Mesh_TinyHero_Sword02);
-    }
+    case EMatchColor::Green:
+        return Mesh_AnimalHero_Shield01;
 
-    if (Candidates.Num() == 0)
-    {
-        // nothing configured
+    case EMatchColor::Blue:
+        return Mesh_TinyHero_Sword02;
+
+    default:
         return nullptr;
     }
-
-    const int32 Index = FMath::RandRange(0, Candidates.Num() - 1);
-    return Candidates[Index];
 }
-
 
 // clears color assignment and returns to idle state
 void UColorMatchComponent::ClearAssignment()
@@ -127,10 +132,16 @@ void UColorMatchComponent::ClearAssignment()
     State = EMatchState::Idle;
 
     CurrentIconMesh = nullptr;
+
+    // hide emoji when going back to idle
+    if (EmojiComponent)
+    {
+        EmojiComponent->SetHiddenInGame(true);
+    }
+
     RefreshDebugLabel();
     OnAssignmentChanged.Broadcast(CurrentColor, false);
 }
-
 
 // called when this npc successfully matched with another
 void UColorMatchComponent::HandleMatched(AActor* OtherActor)
@@ -141,8 +152,30 @@ void UColorMatchComponent::HandleMatched(AActor* OtherActor)
     }
 
     State = EMatchState::Matched;
+
+    // freeze this npc for 3 seconds while the emoji shows
+    FreezeOwnerForSeconds(3.0f);
+
+    // hide the color icon
     CurrentIconMesh = nullptr;
     RefreshDebugLabel();
+
+    // show the match emoji
+    if (EmojiComponent && MatchEmojiTexture)
+    {
+        EmojiComponent->SetSprite(MatchEmojiTexture);
+        EmojiComponent->SetHiddenInGame(false);
+
+        // after 3 seconds hide emoji and reset state
+        FTimerHandle TimerHandle;
+        GetWorld()->GetTimerManager().SetTimer(
+            TimerHandle,
+            FTimerDelegate::CreateUObject(this, &UColorMatchComponent::ResetAfterEmoji),
+            3.0f,
+            false
+        );
+    }
+
     OnMatchedWith.Broadcast(OtherActor);
 }
 
@@ -156,47 +189,31 @@ void UColorMatchComponent::HandleMismatch(AActor* OtherActor)
     }
 
     State = EMatchState::Dead;
+
+    // freeze this npc for 3 seconds as well
+    FreezeOwnerForSeconds(3.0f);
+
+    // hide the color icon
     CurrentIconMesh = nullptr;
     RefreshDebugLabel();
+
+    // show the mismatch emoji
+    if (EmojiComponent && MismatchEmojiTexture)
+    {
+        EmojiComponent->SetSprite(MismatchEmojiTexture);
+        EmojiComponent->SetHiddenInGame(false);
+
+        // after 3 seconds hide emoji and reset state
+        FTimerHandle TimerHandle;
+        GetWorld()->GetTimerManager().SetTimer(
+            TimerHandle,
+            FTimerDelegate::CreateUObject(this, &UColorMatchComponent::ResetAfterEmoji),
+            3.0f,
+            false
+        );
+    }
+
     OnMismatchWith.Broadcast(OtherActor);
-}
-
-// converts match color enum to unreal color for debug display
-static FColor ConvertMatchColorToFColor(EMatchColor MatchColor)
-{
-    switch (MatchColor)
-    {
-    default:
-    case EMatchColor::None:
-        return FColor::White;
-    case EMatchColor::Red:
-        return FColor::Red;
-    case EMatchColor::Green:
-        return FColor::Green;
-    case EMatchColor::Blue:
-        return FColor::Blue;
-    case EMatchColor::Yellow:
-        return FColor::Yellow;
-    }
-}
-
-// converts match color enum to text for debug display
-static FText ConvertMatchColorToText(EMatchColor MatchColor)
-{
-    switch (MatchColor)
-    {
-    default:
-    case EMatchColor::None:
-        return FText::FromString(TEXT("NONE"));
-    case EMatchColor::Red:
-        return FText::FromString(TEXT("RED"));
-    case EMatchColor::Green:
-        return FText::FromString(TEXT("GREEN"));
-    case EMatchColor::Blue:
-        return FText::FromString(TEXT("BLUE"));
-    case EMatchColor::Yellow:
-        return FText::FromString(TEXT("YELLOW"));
-    }
 }
 
 // updates debug label to show current color if looking for match
@@ -225,3 +242,57 @@ void UColorMatchComponent::RefreshDebugLabel()
     }
 }
 
+void UColorMatchComponent::HideEmoji()
+{
+    if (EmojiComponent)
+    {
+        EmojiComponent->SetHiddenInGame(true);
+    }
+}
+
+void UColorMatchComponent::ResetAfterEmoji()
+{
+    // 1) Hide the emoji
+    HideEmoji();
+
+    // 2) Reset the match state so this NPC can be reused
+    ClearAssignment();
+}
+
+void UColorMatchComponent::FreezeOwnerForSeconds(float Seconds)
+{
+    ACharacter* CharacterOwner = Cast<ACharacter>(GetOwner());
+    if (!CharacterOwner)
+    {
+        return;
+    }
+
+    if (UCharacterMovementComponent* MoveComp = CharacterOwner->GetCharacterMovement())
+    {
+        // Disable movement
+        MoveComp->DisableMovement();
+
+        // Set a timer to unfreeze 
+        FTimerHandle TimerHandle;
+        GetWorld()->GetTimerManager().SetTimer(
+            TimerHandle,
+            FTimerDelegate::CreateUObject(this, &UColorMatchComponent::UnfreezeOwner),
+            Seconds,
+            false
+        );
+    }
+}
+
+void UColorMatchComponent::UnfreezeOwner()
+{
+    ACharacter* CharacterOwner = Cast<ACharacter>(GetOwner());
+    if (!CharacterOwner)
+    {
+        return;
+    }
+
+    if (UCharacterMovementComponent* MoveComp = CharacterOwner->GetCharacterMovement())
+    {
+        MoveComp->SetMovementMode(MOVE_Walking);
+    }
+}
