@@ -166,12 +166,12 @@ void UColorMatchComponent::HandleMatched(AActor* OtherActor)
         EmojiComponent->SetSprite(MatchEmojiTexture);
         EmojiComponent->SetHiddenInGame(false);
 
-        // hide after 3 seconds
+        // after 3 seconds hide emoji and reset state
         FTimerHandle TimerHandle;
         GetWorld()->GetTimerManager().SetTimer(
             TimerHandle,
-            FTimerDelegate::CreateUObject(this, &UColorMatchComponent::HideEmoji),
-            4.0f,
+            FTimerDelegate::CreateUObject(this, &UColorMatchComponent::ResetAfterEmoji),
+            3.0f,
             false
         );
     }
@@ -203,10 +203,11 @@ void UColorMatchComponent::HandleMismatch(AActor* OtherActor)
         EmojiComponent->SetSprite(MismatchEmojiTexture);
         EmojiComponent->SetHiddenInGame(false);
 
+        // after 3 seconds hide emoji and reset state
         FTimerHandle TimerHandle;
         GetWorld()->GetTimerManager().SetTimer(
             TimerHandle,
-            FTimerDelegate::CreateUObject(this, &UColorMatchComponent::HideEmoji),
+            FTimerDelegate::CreateUObject(this, &UColorMatchComponent::ResetAfterEmoji),
             3.0f,
             false
         );
@@ -247,6 +248,15 @@ void UColorMatchComponent::HideEmoji()
     {
         EmojiComponent->SetHiddenInGame(true);
     }
+}
+
+void UColorMatchComponent::ResetAfterEmoji()
+{
+    // 1) Hide the emoji
+    HideEmoji();
+
+    // 2) Reset the match state so this NPC can be reused
+    ClearAssignment();
 }
 
 void UColorMatchComponent::FreezeOwnerForSeconds(float Seconds)

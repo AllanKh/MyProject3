@@ -126,6 +126,7 @@ private:
     void TryAutoRegisterWithManager();
 
     void HideEmoji();
+    void ResetAfterEmoji();
 
     void FreezeOwnerForSeconds(float Seconds);
     void UnfreezeOwner();
