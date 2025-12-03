@@ -106,10 +106,14 @@ void AMatchGameManager::HandleNPCVsNPCCollision(AActor* FirstActor, AActor* Seco
         UE_LOG(LogTemp, Warning, TEXT("MISMATCH -1"));
         AddToScore(-1);
         ShowScoreToast(-1);
+
         FirstMatchComponent->HandleMismatch(SecondActor);
         SecondMatchComponent->HandleMismatch(FirstActor);
-        //DespawnNPC(FirstActor);
-        DespawnNPC(SecondActor);
+
+        // call blueprint event to trigger death
+        OnNPCMismatch(FirstActor, SecondActor);
+
+        //DespawnNPC(SecondActor);
     }
 }
 

@@ -38,8 +38,11 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Match|NPC")
     void UnregisterNPC(AActor* NPCActor);
 
-    UFUNCTION(BlueprintCallable, Category = "Match|Rules")
+    UFUNCTION(BlueprintCallable, Category = "Match|NPC")
     void HandleNPCVsNPCCollision(AActor* FirstActor, AActor* SecondActor);
+
+    UFUNCTION(BlueprintImplementableEvent, Category = "Match|NPC")
+    void OnNPCMismatch(AActor* FirstActor, AActor* SecondActor);
 
     bool IsInsidePlayArea(const FVector& WorldPosition) const;
 
