@@ -93,12 +93,17 @@ void AMatchGameManager::HandleNPCVsNPCCollision(AActor* FirstActor, AActor* Seco
         UE_LOG(LogTemp, Warning, TEXT("MATCH +1"));
         AddToScore(+1);
         ShowScoreToast(+1);
+
         FirstMatchComponent->HandleMatched(SecondActor);
         SecondMatchComponent->HandleMatched(FirstActor);
         FirstMatchComponent->ClearAssignment();
         SecondMatchComponent->ClearAssignment();
-        DespawnNPC(FirstActor);
-        DespawnNPC(SecondActor);
+
+        // call Blueprint event for successful match
+        OnNPCMatch(FirstActor, SecondActor);
+
+        //DespawnNPC(FirstActor);
+        //DespawnNPC(SecondActor);
     }
     else
     {
