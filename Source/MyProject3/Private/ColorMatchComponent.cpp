@@ -1,6 +1,7 @@
 #include "ColorMatchComponent.h"
 #include "MatchGameManager.h"
 #include "Components/TextRenderComponent.h"
+#include "Components/StaticMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
 
 UColorMatchComponent::UColorMatchComponent()
@@ -16,26 +17,31 @@ void UColorMatchComponent::BeginPlay()
     // respect enabled flag for ticking
     SetComponentTickEnabled(bIsComponentEnabled);
 
-    // create debug text component if enabled in settings
+    // create debug icon mesh component if enabled in settings
     if (bShouldUseDebugLabel)
     {
-        DebugTextComponent = NewObject<UTextRenderComponent>(GetOwner(), TEXT("MatchDebugText"));
-        if (DebugTextComponent)
+        DebugIconComponent = NewObject<UStaticMeshComponent>(GetOwner(), TEXT("MatchDebugIcon"));
+        if (DebugIconComponent)
         {
-            DebugTextComponent->SetupAttachment(GetOwner()->GetRootComponent());
-            DebugTextComponent->RegisterComponent();
-            DebugTextComponent->SetHorizontalAlignment(EHTA_Center);
-            DebugTextComponent->SetVerticalAlignment(EVRTA_TextCenter);
-            DebugTextComponent->SetWorldSize(48.f);
-            DebugTextComponent->SetTextRenderColor(FColor::White);
-            DebugTextComponent->SetRelativeLocation(FVector(0, 0, 120));
-            DebugTextComponent->SetHiddenInGame(true);
+            DebugIconComponent->SetupAttachment(GetOwner()->GetRootComponent());
+            DebugIconComponent->RegisterComponent();
+
+            // Position above the NPC
+            DebugIconComponent->SetRelativeLocation(IconOffset);
+            DebugIconComponent->SetRelativeScale3D(IconScale);
+
+            // purely visual
+            DebugIconComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+            DebugIconComponent->SetCastShadow(false);
+
+            DebugIconComponent->SetHiddenInGame(true);
         }
     }
 
     RefreshDebugLabel();
     TryAutoRegisterWithManager();
 }
+
 
 // finds the game manager in the world
 AMatchGameManager* UColorMatchComponent::FindGameManager() const
@@ -64,9 +70,50 @@ void UColorMatchComponent::Assign(EMatchColor NewColor, bool bIsLookingForMatch)
 
     CurrentColor = NewColor;
     State = bIsLookingForMatch ? EMatchState::LookingForMatch : EMatchState::Idle;
+
+    // when NPC starts looking for a match, pick a random icon mesh
+    if (State == EMatchState::LookingForMatch)
+    {
+        CurrentIconMesh = GetRandomIconMesh();
+
+        if (DebugIconComponent && CurrentIconMesh)
+        {
+            DebugIconComponent->SetStaticMesh(CurrentIconMesh);
+        }
+    }
+
     RefreshDebugLabel();
     OnAssignmentChanged.Broadcast(CurrentColor, bIsLookingForMatch);
 }
+
+
+UStaticMesh* UColorMatchComponent::GetRandomIconMesh() const
+{
+    TArray<UStaticMesh*> Candidates;
+
+    if (Mesh_RPGHero_Sword01)
+    {
+        Candidates.Add(Mesh_RPGHero_Sword01);
+    }
+    if (Mesh_AnimalHero_Shield01)
+    {
+        Candidates.Add(Mesh_AnimalHero_Shield01);
+    }
+    if (Mesh_TinyHero_Sword02)
+    {
+        Candidates.Add(Mesh_TinyHero_Sword02);
+    }
+
+    if (Candidates.Num() == 0)
+    {
+        // nothing configured
+        return nullptr;
+    }
+
+    const int32 Index = FMath::RandRange(0, Candidates.Num() - 1);
+    return Candidates[Index];
+}
+
 
 // clears color assignment and returns to idle state
 void UColorMatchComponent::ClearAssignment()
@@ -78,9 +125,12 @@ void UColorMatchComponent::ClearAssignment()
 
     CurrentColor = EMatchColor::None;
     State = EMatchState::Idle;
+
+    CurrentIconMesh = nullptr;
     RefreshDebugLabel();
     OnAssignmentChanged.Broadcast(CurrentColor, false);
 }
+
 
 // called when this npc successfully matched with another
 void UColorMatchComponent::HandleMatched(AActor* OtherActor)
@@ -91,9 +141,11 @@ void UColorMatchComponent::HandleMatched(AActor* OtherActor)
     }
 
     State = EMatchState::Matched;
+    CurrentIconMesh = nullptr;
     RefreshDebugLabel();
     OnMatchedWith.Broadcast(OtherActor);
 }
+
 
 // called when this npc collided but colors didnt match
 void UColorMatchComponent::HandleMismatch(AActor* OtherActor)
@@ -104,6 +156,7 @@ void UColorMatchComponent::HandleMismatch(AActor* OtherActor)
     }
 
     State = EMatchState::Dead;
+    CurrentIconMesh = nullptr;
     RefreshDebugLabel();
     OnMismatchWith.Broadcast(OtherActor);
 }
@@ -149,22 +202,26 @@ static FText ConvertMatchColorToText(EMatchColor MatchColor)
 // updates debug label to show current color if looking for match
 void UColorMatchComponent::RefreshDebugLabel()
 {
-    if (!DebugTextComponent)
+    if (!DebugIconComponent)
     {
         return;
     }
 
-    // only show label when npc has color and is looking for match
-    const bool bShouldShowLabel =
+    // only show icon when npc has color and is looking for match
+    const bool bShouldShowIcon =
         bIsComponentEnabled &&
         (CurrentColor != EMatchColor::None) &&
-        (State == EMatchState::LookingForMatch);
+        (State == EMatchState::LookingForMatch) &&
+        (CurrentIconMesh != nullptr);
 
-    DebugTextComponent->SetHiddenInGame(!bShouldShowLabel);
+    DebugIconComponent->SetHiddenInGame(!bShouldShowIcon);
 
-    if (bShouldShowLabel)
+    if (bShouldShowIcon)
     {
-        DebugTextComponent->SetText(ConvertMatchColorToText(CurrentColor));
-        DebugTextComponent->SetTextRenderColor(ConvertMatchColorToFColor(CurrentColor));
+        if (DebugIconComponent->GetStaticMesh() != CurrentIconMesh)
+        {
+            DebugIconComponent->SetStaticMesh(CurrentIconMesh);
+        }
     }
 }
+
