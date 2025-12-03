@@ -27,10 +27,10 @@ public:
     TSubclassOf<UUserWidget> ScoreToastClass;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Match|Rules")
-    float MinimumAssignInterval = 1.5f;
+    float MinimumAssignInterval = 1.0f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Match|Rules")
-    float MaximumAssignInterval = 4.0f;
+    float MaximumAssignInterval = 1.0f;
 
     UFUNCTION(BlueprintCallable, Category = "Match|NPC")
     void RegisterNPC(AActor* NPCActor);

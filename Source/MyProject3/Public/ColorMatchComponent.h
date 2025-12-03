@@ -8,6 +8,8 @@
 class AMatchGameManager;
 class UStaticMeshComponent;
 class UStaticMesh;
+class UBillboardComponent;
+class UTexture2D;
 
 // tracks what state the npc is in for matching
 UENUM(BlueprintType)
@@ -91,6 +93,23 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Match")
     bool IsLooking() const { return State == EMatchState::LookingForMatch; }
 
+    // emoji shown when this NPC successfully matches
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Match|Visual")
+    UTexture2D* MatchEmojiTexture = nullptr;
+
+    // emoji shown when this NPC mismatches
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Match|Visual")
+    UTexture2D* MismatchEmojiTexture = nullptr;
+
+    // offset of the emoji billboard above the NPC’s root
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Match|Visual")
+    FVector EmojiOffset = FVector(0.f, 0.f, 150.f);
+
+
+
+
+
+
     // called by manager when match succeeds
     void HandleMatched(AActor* OtherActor);
     // called by manager when match fails
@@ -106,6 +125,11 @@ private:
     // registers this npc with game manager on start
     void TryAutoRegisterWithManager();
 
+    void HideEmoji();
+
+    void FreezeOwnerForSeconds(float Seconds);
+    void UnfreezeOwner();
+
     // finds the game manager in the world
     AMatchGameManager* FindGameManager() const;
 
@@ -117,6 +141,11 @@ private:
     UPROPERTY()
     UStaticMesh* CurrentIconMesh = nullptr;
 
-    // picks a random mesh from the three configured options
-    UStaticMesh* GetRandomIconMesh() const;
+    // picks the icon mesh for a specific color
+    UStaticMesh* GetIconMeshForColor(EMatchColor Color) const;
+
+    // billboard component that displays the match/mismatch emoji
+    UPROPERTY()
+    UBillboardComponent* EmojiComponent = nullptr;
+
 };
