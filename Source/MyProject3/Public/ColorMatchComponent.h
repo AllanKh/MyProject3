@@ -5,8 +5,9 @@
 #include "EMatchColor.h"
 #include "ColorMatchComponent.generated.h"
 
-class UTextRenderComponent;
 class AMatchGameManager;
+class UStaticMeshComponent;
+class UStaticMesh;
 
 // tracks what state the npc is in for matching
 UENUM(BlueprintType)
@@ -46,9 +47,27 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Match")
     EMatchState State = EMatchState::Idle;
 
-    // whether to show color label above npc
+    // whether to show icon mesh above npc
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Match|Debug")
     bool bShouldUseDebugLabel = true;
+
+    // weapon meshes
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Match|Visual")
+    UStaticMesh* Mesh_RPGHero_Sword01 = nullptr;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Match|Visual")
+    UStaticMesh* Mesh_AnimalHero_Shield01 = nullptr;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Match|Visual")
+    UStaticMesh* Mesh_TinyHero_Sword02 = nullptr;
+
+    // Offset of the icon above the NPC’s root
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Match|Visual")
+    FVector IconOffset = FVector(0.f, 0.f, 120.f);
+
+    // Scale of the icon mesh
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Match|Visual")
+    FVector IconScale = FVector(0.6f, 0.6f, 0.6f);
 
     // events that fire during matching
     UPROPERTY(BlueprintAssignable, Category = "Match|Events")
@@ -81,14 +100,23 @@ protected:
     virtual void BeginPlay() override;
 
 private:
-    // updates the floating text above npc
+    // updates the floating icon above npc
     void RefreshDebugLabel();
+
     // registers this npc with game manager on start
     void TryAutoRegisterWithManager();
+
     // finds the game manager in the world
     AMatchGameManager* FindGameManager() const;
 
-    // text component that shows color above npc
+    // mesh component that shows icon above npc
     UPROPERTY()
-    UTextRenderComponent* DebugTextComponent = nullptr;
+    UStaticMeshComponent* DebugIconComponent = nullptr;
+
+    // mesh currently chosen for this npc
+    UPROPERTY()
+    UStaticMesh* CurrentIconMesh = nullptr;
+
+    // picks a random mesh from the three configured options
+    UStaticMesh* GetRandomIconMesh() const;
 };
