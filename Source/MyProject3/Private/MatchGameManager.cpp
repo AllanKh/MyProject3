@@ -89,20 +89,21 @@ void AMatchGameManager::HandleNPCVsNPCCollision(AActor* FirstActor, AActor* Seco
     EMatchColor MatchedColor;
     if (DoColorsMatchAndAreBothLooking(FirstMatchComponent, SecondMatchComponent, MatchedColor))
     {
+        // colors match. give point and remove both npcs
         UE_LOG(LogTemp, Warning, TEXT("MATCH +1"));
         AddToScore(+1);
         ShowScoreToast(+1);
 
         FirstMatchComponent->HandleMatched(SecondActor);
         SecondMatchComponent->HandleMatched(FirstActor);
+        FirstMatchComponent->ClearAssignment();
+        SecondMatchComponent->ClearAssignment();
 
-        //FirstMatchComponent->ClearAssignment();
-        //SecondMatchComponent->ClearAssignment();
+        // call Blueprint event for successful match
+        OnNPCMatch(FirstActor, SecondActor);
 
         //DespawnNPC(FirstActor);
         //DespawnNPC(SecondActor);
-
-        OnNPCMatch(FirstActor, SecondActor);
     }
     else
     {
@@ -180,13 +181,8 @@ void AMatchGameManager::AssignColorToRandomNPC()
         AActor* SelectedNPC = IdleNPCsInsideArea[FMath::RandRange(0, IdleNPCsInsideArea.Num() - 1)];
         if (UColorMatchComponent* MatchComponent = GetColorMatchComponent(SelectedNPC))
         {
-            static const EMatchColor AVAILABLE_COLORS[] =
-            {
-                EMatchColor::Red,
-                EMatchColor::Green,
-                EMatchColor::Blue
-            };
-            const EMatchColor RandomColor = AVAILABLE_COLORS[FMath::RandHelper(3)];
+            static const EMatchColor AVAILABLE_COLORS[] = { EMatchColor::Red, EMatchColor::Green, EMatchColor::Blue, EMatchColor::Yellow };
+            const EMatchColor RandomColor = AVAILABLE_COLORS[FMath::RandHelper(4)];
             MatchComponent->Assign(RandomColor, true);
         }
     }
