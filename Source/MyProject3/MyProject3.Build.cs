@@ -14,7 +14,8 @@ public class MyProject3 : ModuleRules
             "InputCore",
             "AIModule",
             "EnhancedInput",
-            "UMG"
+            "UMG",
+            "Json"
         });
 
         PrivateDependencyModuleNames.AddRange(new string[]
