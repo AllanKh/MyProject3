@@ -25,7 +25,7 @@ public:
 
 };
 
-UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class MYPROJECT3_API UCameraDataGatherer : public UActorComponent
 {
 	GENERATED_BODY()
@@ -42,6 +42,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Telemetry")
 	void EndOfDay();
 
+	FString GetActiveCameraName() const;
+
+	bool DoesCameraMatchMinigame(const FString& ActiveCameraName) const; 
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
@@ -50,28 +53,4 @@ public:
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-private:
-	FString GetActiveCameraName() const;
-
-	bool DoesCameraMatchMinigame(const FString& ActiveCameraName) const {
-		if (CameraData.MinigameName == TEXT("Trading"))
-		{
-			return ActiveCameraName == TEXT("TradeCamera");
-		}
-		else if (CameraData.MinigameName == TEXT("DungeonMinigame"))
-		{
-			return ActiveCameraName == TEXT("DungeonCamera");
-		}
-		else if (CameraData.MinigameName == TEXT("ResourceMinigame"))
-		{
-			return ActiveCameraName == TEXT("ResourceCamera");
-		}
-		else if (CameraData.MinigameName == TEXT("LootPackerMinigame"))
-		{
-			return ActiveCameraName == TEXT("LootCamera");
-		}
-		return false;
-	}
-
-		
 };

@@ -81,6 +81,27 @@ FString UCameraDataGatherer::GetActiveCameraName() const
 	return FString();
 }
 
+bool UCameraDataGatherer::DoesCameraMatchMinigame(const FString& ActiveCameraName) const
+{
+		if (CameraData.MinigameName == TEXT("Trading"))
+		{
+			return ActiveCameraName == TEXT("TradeCamera");
+		}
+		else if (CameraData.MinigameName == TEXT("DungeonMinigame"))
+		{
+			return ActiveCameraName == TEXT("DungeonCamera");
+		}
+		else if (CameraData.MinigameName == TEXT("ResourceMinigame"))
+		{
+			return ActiveCameraName == TEXT("ResourceCamera");
+		}
+		else if (CameraData.MinigameName == TEXT("LootPackerMinigame"))
+		{
+			return ActiveCameraName == TEXT("LootCamera");
+		}
+		return false;
+}
+
 void UCameraDataGatherer::RegisterClick() {
 	FString ActiveCameraName = GetActiveCameraName();
 

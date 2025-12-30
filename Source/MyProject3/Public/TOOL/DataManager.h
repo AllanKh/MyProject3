@@ -11,6 +11,7 @@
 #include "DataManager.generated.h"
 
 UNPCDataGatherer;
+UCameraDataGatherer;
 UCLASS()
 class MYPROJECT3_API UDataManager : public UGameInstanceSubsystem
 {
