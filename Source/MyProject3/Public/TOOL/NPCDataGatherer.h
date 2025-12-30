@@ -5,6 +5,7 @@
 #include "Components/ActorComponent.h"
 #include "NPCDataGatherer.generated.h"
 
+class UDataManager;
 USTRUCT(BlueprintType)
 struct FNPCDATASTRUCT
 {

@@ -2,6 +2,7 @@
 
 
 #include "TOOL/NPCDataGatherer.h"
+#include "TOOL/DataManager.h"
 
 // Sets default values for this component's properties
 UNPCDataGatherer::UNPCDataGatherer()
@@ -52,7 +53,11 @@ void UNPCDataGatherer::TaskClear()
 
 void UNPCDataGatherer::EndOfDay()
 {
-
+	if (UDataManager* DataManager = GetWorld()->GetGameInstance()->GetSubsystem<UDataManager>())
+	{
+		DataManager->AddToNPCStruct(NPCData);
+		UE_LOG(LogTemp, Log, TEXT("NPC telemetry submitted to DataManager."));
+	}
 }
 
 
