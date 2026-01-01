@@ -55,6 +55,7 @@ public:
     /*UFUNCTION(BlueprintCallable, Category = "Telemetry")
     void UpdateMemoryUsage(int32 NewMemoryUsage);*/
 
+    UFUNCTION(BlueprintCallable, Category = "Telemetry")
     void AddTimeActive(float DeltaTime);
 
     UFUNCTION(BlueprintCallable, Category = "Telemetry")
