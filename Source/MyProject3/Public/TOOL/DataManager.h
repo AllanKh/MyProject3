@@ -37,7 +37,12 @@ public:
 	FString SerializeCameraArrayToString() const;
 
 	UFUNCTION(BlueprintCallable, Category = "Telemetry")
-	void PrintToCSV() const;
+	void GatherTelemetryData();
+
+	UFUNCTION(BlueprintCallable, Category = "Telemetry")
+	void PrintToCSV();
+
+
 
 	
 };

@@ -2,6 +2,7 @@
 
 
 #include "TOOL/DataManager.h"
+#include "Kismet/GameplayStatics.h"
 
 void UDataManager::AddToNPCStruct(const FNPCDATASTRUCT& data)
 {
@@ -33,8 +34,32 @@ FString UDataManager::SerializeCameraArrayToString() const
 	return CSV;
 }
 
-void UDataManager::PrintToCSV() const
+void UDataManager::GatherTelemetryData()
 {
+	NPCDataStructCollection.Empty(); // Clear old data
+
+	UClass* NPCBlueprintClass = StaticLoadClass(AActor::StaticClass(), nullptr, TEXT("/Game/PathTo/BP_NPC_NEW.BP_NPC_NEW_C"));
+
+	// Get all NPC actors
+	TArray<AActor*> NPCActors;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), NPCBlueprintClass, NPCActors);
+
+
+	for (AActor* Actor : NPCActors)
+	{
+		if (UNPCDataGatherer* Gatherer = Actor->FindComponentByClass<UNPCDataGatherer>())
+		{
+			Gatherer->EndOfDay();
+		}
+	}
+
+	// Get all Camera Components
+}
+
+void UDataManager::PrintToCSV()
+{
+	GatherTelemetryData();
+
 	FString NPCCSV = SerializeNPCArrayToString();
 	FString CameraCSV = SerializeCameraArrayToString();
 
