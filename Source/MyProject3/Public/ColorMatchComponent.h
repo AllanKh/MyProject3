@@ -87,6 +87,9 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Match")
     void ClearAssignment();
 
+    UFUNCTION(BlueprintCallable, Category = "Match") // added by liz
+    void Reset();
+
     // checks if this npc is currently looking for a match
     UFUNCTION(BlueprintCallable, Category = "Match")
     bool IsLooking() const { return State == EMatchState::LookingForMatch; }
