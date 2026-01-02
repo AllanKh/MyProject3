@@ -36,15 +36,20 @@ public:
 
 	FCAMERADATASTRUCT CameraData;
 
-	UFUNCTION(BlueprintCallable, Category = "Telemetry")
+	UFUNCTION(BlueprintCallable, Category = "Camera")
 	void RegisterClick();
+
+	UFUNCTION(BlueprintCallable, Category = "Camera")
+	void VerifyActiveCamera(FString ActiveCameraName);
 
 	UFUNCTION(BlueprintCallable, Category = "Telemetry")
 	void EndOfDay();
 
-	FString GetActiveCameraName() const;
+	UPROPERTY(EditAnywhere)
+	FString LinkedCameraName;
 
-	bool DoesCameraMatchMinigame(const FString& ActiveCameraName) const; 
+	UPROPERTY(EditAnywhere)
+	bool IsCameraMatched = false;
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;

@@ -7,11 +7,9 @@
 // Sets default values for this component's properties
 UCameraDataGatherer::UCameraDataGatherer()
 {
-	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
-	// off to improve performance if you don't need them.
+
 	PrimaryComponentTick.bCanEverTick = true;
 
-	// ...
 }
 
 
@@ -20,95 +18,46 @@ void UCameraDataGatherer::BeginPlay()
 {
     Super::BeginPlay();
 
-    if (AActor* Owner = GetOwner())
-    {
-        ULevel* OwnerLevel = Owner->GetLevel();
-        UWorld* World = GetWorld();
-
-        if (OwnerLevel && World)
-        {
-            if (OwnerLevel == World->PersistentLevel)
-            {
-                CameraData.MinigameName = TEXT("Trading");
-            }
-            else
-            {
-                if (OwnerLevel->GetOuter())
-                {
-                    if (ULevelStreaming* LevelStreaming = Cast<ULevelStreaming>(OwnerLevel->GetOuter()))
-                    {
-                        FString LevelPackageName = LevelStreaming->GetWorldAssetPackageName();
-                        CameraData.MinigameName = FPackageName::GetShortName(LevelPackageName);
-                    }
-                    else
-                    {
-						CameraData.MinigameName = OwnerLevel->GetName();
-                    }
-                }
-            }
-        }
-    }
+	CameraData.MinigameName = LinkedCameraName;
 }
 
 
 // Called every frame
 void UCameraDataGatherer::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-	FString ActiveCameraName = GetActiveCameraName();
-
-	if (DoesCameraMatchMinigame(ActiveCameraName))
+		Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+	if (IsCameraMatched)
 	{
+
 		CameraData.TimeActive += DeltaTime;
 	}
 }
 
-FString UCameraDataGatherer::GetActiveCameraName() const
+
+void UCameraDataGatherer::RegisterClick()
 {
-	if (GetWorld())
-	{
-		APlayerController* PC = GetWorld()->GetFirstPlayerController();
-		if (PC && PC->PlayerCameraManager)
-		{
-			AActor* ViewTarget = PC->PlayerCameraManager->GetViewTarget();
-			if (ViewTarget)
-			{
-				return ViewTarget->GetName();
-			}
-		}
-	}
-	return FString();
+    if (IsCameraMatched)
+    {
+        CameraData.TimesClicked++;
+        UE_LOG(LogTemp, Warning, TEXT("Click registered; TimesClicked is now %d."), CameraData.TimesClicked);
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Click registered; TimesClicked is now %d."), CameraData.TimesClicked);
+    }
 }
 
-bool UCameraDataGatherer::DoesCameraMatchMinigame(const FString& ActiveCameraName) const
+void UCameraDataGatherer::VerifyActiveCamera(FString ActiveCameraName)
 {
-		if (CameraData.MinigameName == TEXT("Trading"))
-		{
-			return ActiveCameraName == TEXT("TradeCamera");
-		}
-		else if (CameraData.MinigameName == TEXT("DungeonMinigame"))
-		{
-			return ActiveCameraName == TEXT("DungeonCamera");
-		}
-		else if (CameraData.MinigameName == TEXT("ResourceMinigame"))
-		{
-			return ActiveCameraName == TEXT("ResourceCamera");
-		}
-		else if (CameraData.MinigameName == TEXT("LootPackerMinigame"))
-		{
-			return ActiveCameraName == TEXT("LootCamera");
-		}
-		return false;
-}
+    if (ActiveCameraName != CameraData.MinigameName)
+    {
+        IsCameraMatched = false;
+        UE_LOG(LogTemp, Warning, TEXT("VerifyActiveCamera: ActiveCameraActor nullptr. MinigameName: [%s]"), *CameraData.MinigameName);
+        return;
+    }
 
-void UCameraDataGatherer::RegisterClick() {
-	FString ActiveCameraName = GetActiveCameraName();
+    IsCameraMatched = true;
 
-	if (DoesCameraMatchMinigame(ActiveCameraName))
-	{
-		CameraData.TimesClicked++;
-	}
 }
 
 void UCameraDataGatherer::EndOfDay() 

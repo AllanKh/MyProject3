@@ -28,20 +28,21 @@ FString UDataManager::SerializeNPCArrayToString() const
 
 FString UDataManager::SerializeCameraArrayToString() const
 {
-    FString CSV = TEXT("Camera Name, Minigame Name, Time Active, Times Clicked\n");
+    FString CSV = TEXT("Camera Name, Time Active, Times Clicked\n");
     for (const FCAMERADATASTRUCT& Entry : CameraDataStructCollection)
     {
-        CSV += FString::Printf(TEXT("%s, %.2f, %d\n"), *Entry.MinigameName, Entry.TimeActive, Entry.TimesClicked);
+        CSV += FString::Printf(TEXT("%s, %.2f, %d\n"),
+            *Entry.MinigameName, 
+            Entry.TimeActive,
+            Entry.TimesClicked);
     }
     return CSV;
 }
 
 void UDataManager::GatherTelemetryData()
 {
-    UE_LOG(LogTemp, Log, TEXT("GatherTelemetryData: Starting telemetry data collection."));
 
     NPCDataStructCollection.Empty();
-    UE_LOG(LogTemp, Log, TEXT("GatherTelemetryData: Cleared NPCDataStructCollection."));
 
     UClass* NPCBlueprintClass = LoadClass<AActor>(
         nullptr,
@@ -80,6 +81,24 @@ void UDataManager::GatherTelemetryData()
     }
 
     UE_LOG(LogTemp, Log, TEXT("GatherTelemetryData: Telemetry collection complete."));
+
+    CameraDataStructCollection.Empty();
+    UE_LOG(LogTemp, Log, TEXT("GatherTelemetryData: Cleared CameraDataStructCollection."));
+
+    // Gather Camera telemetry
+    TArray<AActor*> AllActors;
+    UGameplayStatics::GetAllActorsOfClass(GetWorld(), AActor::StaticClass(), AllActors);
+
+    for (AActor* Actor : AllActors)
+    {
+        if (!Actor) continue;
+
+        if (UCameraDataGatherer* CameraGatherer = Actor->FindComponentByClass<UCameraDataGatherer>())
+        {
+            UE_LOG(LogTemp, Log, TEXT("GatherTelemetryData: Calling EndOfDay() on Camera Actor: %s"), *Actor->GetName());
+            CameraGatherer->EndOfDay();
+        }
+    }
 }
 
 void UDataManager::PrintToCSV()
