@@ -1,10 +1,24 @@
 #include "CameraCyclerPlayerController.h"
-
 #include "Camera/CameraActor.h"
 #include "Kismet/GameplayStatics.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Engine/Engine.h"
+#include "Blueprint/UserWidget.h"
+
+ACameraCyclerPlayerController::ACameraCyclerPlayerController()
+{
+    bAutoManageActiveCameraTarget = false;
+
+    PrimaryActorTick.bCanEverTick = true;
+    PrimaryActorTick.bTickEvenWhenPaused = true;
+
+    CurrentCameraIndex = 0;
+    bIsTutorialActive = false;
+    bHasSyncedToViewTarget = false;
+
+    TutorialWidgetInstance = nullptr;
+}
 
 void ACameraCyclerPlayerController::BeginPlay()
 {
@@ -12,6 +26,7 @@ void ACameraCyclerPlayerController::BeginPlay()
 
     UE_LOG(LogTemp, Warning, TEXT("CameraCyclerPlayerController::BeginPlay"));
 
+    // Enhanced Input mapping context
     if (ULocalPlayer* LocalPlayer = GetLocalPlayer())
     {
         if (UEnhancedInputLocalPlayerSubsystem* Subsys =
@@ -28,13 +43,36 @@ void ACameraCyclerPlayerController::BeginPlay()
         }
     }
 
+    // Build & force a deterministic start camera
     BuildCameraList();
 
     if (GameCameras.Num() > 0)
     {
         CurrentCameraIndex = 0;
+        // Hard set to camera 0 so we never "random start"
+        SetViewTarget(GameCameras[0]);
+        UE_LOG(LogTemp, Warning, TEXT("BeginPlay: Forced start camera to %s"), *GameCameras[0]->GetName());
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("BeginPlay: No GameCameras found"));
+    }
 
-        SwitchToCamera(CurrentCameraIndex, 0.0f);
+    // Tutorial widget class auto-load (your existing logic)
+    if (!TutorialWidgetClass)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("TutorialWidgetClass not set, attempting to load..."));
+
+        TutorialWidgetClass = LoadClass<UUserWidget>(nullptr, TEXT("/Game/Tutorial/WBP_TutorialScreen.WBP_TutorialScreen_C"));
+
+        if (TutorialWidgetClass)
+        {
+            UE_LOG(LogTemp, Warning, TEXT("TutorialWidgetClass loaded successfully!"));
+        }
+        else
+        {
+            UE_LOG(LogTemp, Error, TEXT("Failed to load TutorialWidgetClass!"));
+        }
     }
 }
 
@@ -54,22 +92,17 @@ void ACameraCyclerPlayerController::SetupInputComponent()
         EIC->BindAction(NextCameraAction, ETriggerEvent::Started,
             this, &ACameraCyclerPlayerController::NextCamera);
     }
-    else
-    {
-        UE_LOG(LogTemp, Warning, TEXT("NextCameraAction not set"));
-    }
 
     if (PrevCameraAction)
     {
         EIC->BindAction(PrevCameraAction, ETriggerEvent::Started,
             this, &ACameraCyclerPlayerController::PreviousCamera);
     }
-    else
-    {
-        UE_LOG(LogTemp, Warning, TEXT("PrevCameraAction not set"));
-    }
-}
 
+    // Legacy input bind for tutorial toggle (as you had)
+    InputComponent->BindAction("ToggleTutorial", IE_Pressed, this, &ACameraCyclerPlayerController::ToggleTutorial);
+    UE_LOG(LogTemp, Warning, TEXT("Tutorial input bound using legacy input"));
+}
 
 void ACameraCyclerPlayerController::BuildCameraList()
 {
@@ -94,6 +127,7 @@ void ACameraCyclerPlayerController::BuildCameraList()
         }
     }
 
+    // Stable sort (still depends on camera names being stable)
     GameCameras.Sort([](const ACameraActor& A, const ACameraActor& B)
         {
             return A.GetName() < B.GetName();
@@ -116,10 +150,41 @@ void ACameraCyclerPlayerController::SwitchToCamera(int32 NewIndex, float CustomB
         Params.BlendFunction = BlendFunction;
         Params.BlendExp = BlendExp;
 
-        UE_LOG(LogTemp, Warning, TEXT("SwitchToCamera: %d -> %s"),
-            NewIndex, *TargetCam->GetName());
+        UE_LOG(LogTemp, Warning, TEXT("SwitchToCamera: %d -> %s"), NewIndex, *TargetCam->GetName());
 
         SetViewTarget(TargetCam, Params);
+    }
+}
+
+int32 ACameraCyclerPlayerController::FindIndexOfCurrentViewTarget() const
+{
+    AActor* VT = GetViewTarget();
+    if (!VT)
+        return INDEX_NONE;
+
+    if (ACameraActor* AsCam = Cast<ACameraActor>(VT))
+    {
+        return GameCameras.IndexOfByKey(AsCam);
+    }
+
+    return INDEX_NONE;
+}
+
+void ACameraCyclerPlayerController::SyncIndexToCurrentCamera()
+{
+    if (GameCameras.Num() == 0)
+        BuildCameraList();
+
+    const int32 Found = FindIndexOfCurrentViewTarget();
+    if (Found != INDEX_NONE)
+    {
+        CurrentCameraIndex = Found;
+        UE_LOG(LogTemp, Warning, TEXT("Synced CurrentCameraIndex to %d (%s)"),
+            CurrentCameraIndex, *GameCameras[CurrentCameraIndex]->GetName());
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("SyncIndexToCurrentCamera: ViewTarget is not a CameraActor in GameCameras"));
     }
 }
 
@@ -135,6 +200,13 @@ void ACameraCyclerPlayerController::NextCamera()
     {
         UE_LOG(LogTemp, Warning, TEXT("NextCamera: still no cameras after rebuild???"));
         return;
+    }
+
+    // Sync only once so we don't fight blends / other systems
+    if (!bHasSyncedToViewTarget)
+    {
+        SyncIndexToCurrentCamera();
+        bHasSyncedToViewTarget = true;
     }
 
     CurrentCameraIndex = (CurrentCameraIndex + 1) % GameCameras.Num();
@@ -160,6 +232,13 @@ void ACameraCyclerPlayerController::PreviousCamera()
         return;
     }
 
+    // Sync only once so we don't fight blends / other systems
+    if (!bHasSyncedToViewTarget)
+    {
+        SyncIndexToCurrentCamera();
+        bHasSyncedToViewTarget = true;
+    }
+
     CurrentCameraIndex = (CurrentCameraIndex - 1 + GameCameras.Num()) % GameCameras.Num();
     SwitchToCamera(CurrentCameraIndex, -1.f);
 
@@ -169,7 +248,44 @@ void ACameraCyclerPlayerController::PreviousCamera()
     }
 }
 
-ACameraCyclerPlayerController::ACameraCyclerPlayerController()
+void ACameraCyclerPlayerController::ToggleTutorial()
 {
-    bAutoManageActiveCameraTarget = false;
+    if (!bIsTutorialActive)
+    {
+        // Open tutorial
+        if (TutorialWidgetClass)
+        {
+            TutorialWidgetInstance = CreateWidget<UUserWidget>(this, TutorialWidgetClass);
+
+            if (TutorialWidgetInstance)
+            {
+                TutorialWidgetInstance->AddToViewport(100);
+
+                SetIgnoreMoveInput(true);
+                SetIgnoreLookInput(true);
+                bShowMouseCursor = true;
+
+                bIsTutorialActive = true;
+
+                UE_LOG(LogTemp, Warning, TEXT("Tutorial opened"));
+            }
+        }
+    }
+    else
+    {
+        // Close tutorial
+        if (TutorialWidgetInstance)
+        {
+            TutorialWidgetInstance->RemoveFromParent();
+            TutorialWidgetInstance = nullptr;
+
+            SetIgnoreMoveInput(false);
+            SetIgnoreLookInput(false);
+            bShowMouseCursor = false;
+
+            bIsTutorialActive = false;
+
+            UE_LOG(LogTemp, Warning, TEXT("Tutorial closed"));
+        }
+    }
 }
