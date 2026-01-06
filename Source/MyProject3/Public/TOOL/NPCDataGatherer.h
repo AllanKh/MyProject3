@@ -5,6 +5,7 @@
 #include "Components/ActorComponent.h"
 #include "NPCDataGatherer.generated.h"
 
+class UDataManager;
 USTRUCT(BlueprintType)
 struct FNPCDATASTRUCT
 {
@@ -13,7 +14,7 @@ struct FNPCDATASTRUCT
 public:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Telemetry")
-	FString Name;
+	FString Name = TEXT("");
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Telemetry")
 	int32 DelegateCount = 0;
@@ -40,9 +41,14 @@ class MYPROJECT3_API UNPCDataGatherer : public UActorComponent
 public:
     UNPCDataGatherer();
 
-    // Struct holding telemetry data
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Telemetry")
-    FNPCDATASTRUCT NPCData;
+    FNPCDATASTRUCT NPCData = FNPCDATASTRUCT{
+        TEXT(""), 
+        0,         
+        0.0f,      
+        0,          
+        0           
+    };
 
     // Blueprint callable update functions
     UFUNCTION(BlueprintCallable, Category = "Telemetry")
@@ -54,6 +60,7 @@ public:
     /*UFUNCTION(BlueprintCallable, Category = "Telemetry")
     void UpdateMemoryUsage(int32 NewMemoryUsage);*/
 
+    UFUNCTION(BlueprintCallable, Category = "Telemetry")
     void AddTimeActive(float DeltaTime);
 
     UFUNCTION(BlueprintCallable, Category = "Telemetry")

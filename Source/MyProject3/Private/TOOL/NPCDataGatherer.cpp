@@ -2,6 +2,7 @@
 
 
 #include "TOOL/NPCDataGatherer.h"
+#include "TOOL/DataManager.h"
 
 // Sets default values for this component's properties
 UNPCDataGatherer::UNPCDataGatherer()
@@ -52,7 +53,19 @@ void UNPCDataGatherer::TaskClear()
 
 void UNPCDataGatherer::EndOfDay()
 {
+	if (UDataManager* DataManager = GetWorld()->GetGameInstance()->GetSubsystem<UDataManager>())
+	{
+		UE_LOG(LogTemp, Log, TEXT("EndOfDay: NPC %s, NPCData address: %p"), *NPCData.Name, &NPCData);
+		UE_LOG(LogTemp, Log, TEXT("EndOfDay: %s DelegateCount=%d TasksSucceeded=%d TasksFailed=%d TimeActive=%f"),
+			*NPCData.Name, NPCData.DelegateCount, NPCData.TasksSucceeded, NPCData.TasksFailed, NPCData.TimeActive);
 
+		DataManager->AddToNPCStruct(NPCData);
+		UE_LOG(LogTemp, Log, TEXT("NPC telemetry submitted to DataManager."));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("SOMETHING WENT WRONG"));
+	}
 }
 
 

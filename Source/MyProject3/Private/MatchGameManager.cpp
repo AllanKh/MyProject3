@@ -137,15 +137,15 @@ void AMatchGameManager::ShowScoreToast(int32 ScoreDelta)
 }
 
 // removes npc from game
-void AMatchGameManager::DespawnNPC(AActor* NPCActor)
-{
-    if (!NPCActor)
-    {
-        return;
-    }
-    RegisteredNPCs.Remove(NPCActor);
-    NPCActor->Destroy();
-}
+//void AMatchGameManager::DespawnNPC(AActor* NPCActor)
+//{
+//    if (!NPCActor)
+//    {
+//        return;
+//    }
+//    RegisteredNPCs.Remove(NPCActor);
+//    NPCActor->Destroy();
+//}
 
 // sets up timer for next color assignment
 void AMatchGameManager::ScheduleNextColorAssignment()

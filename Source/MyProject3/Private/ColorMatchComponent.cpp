@@ -225,3 +225,7 @@ void UColorMatchComponent::RefreshDebugLabel()
     }
 }
 
+void UColorMatchComponent::Reset() {
+    State = EMatchState::Idle;
+}
+

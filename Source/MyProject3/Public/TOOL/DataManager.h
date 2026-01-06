@@ -5,11 +5,13 @@
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "NPCDataGatherer.h"
+#include "CameraDataGatherer.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
 #include "DataManager.generated.h"
 
 UNPCDataGatherer;
+UCameraDataGatherer;
 UCLASS()
 class MYPROJECT3_API UDataManager : public UGameInstanceSubsystem
 {
@@ -19,14 +21,28 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "Telemetry")
 	TArray<FNPCDATASTRUCT> NPCDataStructCollection;
 
+	UPROPERTY(BlueprintReadWrite, Category = "Telemetry")
+	TArray<FCAMERADATASTRUCT> CameraDataStructCollection;
+
 	UFUNCTION(BlueprintCallable, Category = "Telemetry")
 	void AddToNPCStruct(const FNPCDATASTRUCT &data);
+
+	UFUNCTION(BlueprintCallable, Category = "Telemetry")
+	void AddToCameraStruct(const FCAMERADATASTRUCT& data);
 
 	UFUNCTION(BlueprintCallable, Category = "Telemetry")
 	FString SerializeNPCArrayToString() const;
 
 	UFUNCTION(BlueprintCallable, Category = "Telemetry")
-	void PrintToCSV() const;
+	FString SerializeCameraArrayToString() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Telemetry")
+	void GatherTelemetryData();
+
+	UFUNCTION(BlueprintCallable, Category = "Telemetry")
+	void PrintToCSV();
+
+
 
 	
 };
