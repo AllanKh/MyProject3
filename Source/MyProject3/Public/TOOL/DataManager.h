@@ -24,6 +24,7 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "Telemetry")
 	TArray<FCAMERADATASTRUCT> CameraDataStructCollection;
 
+
 	UFUNCTION(BlueprintCallable, Category = "Telemetry")
 	void AddToNPCStruct(const FNPCDATASTRUCT &data);
 
