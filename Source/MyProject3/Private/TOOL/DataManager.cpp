@@ -108,7 +108,12 @@ void UDataManager::PrintToCSV()
 
     FString CombinedCSV = NPCCSV + TEXT("\n\n") + CameraCSV;
 
-    FString FilePath = FPaths::ProjectSavedDir() / TEXT("TelemetryExport.csv");
+    FDateTime now = FDateTime::UtcNow();
+    FString Timestamp = now.ToString(TEXT("%Y%m%d_%H%M%S"));
+
+    FString FileName = FString::Printf(TEXT("TelemetryExport_%s.csv"), *Timestamp);
+
+    FString FilePath = FPaths::ProjectSavedDir() / FileName;
     bool bSuccess = FFileHelper::SaveStringToFile(CombinedCSV, *FilePath);
 
     if (bSuccess)
