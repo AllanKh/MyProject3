@@ -68,7 +68,16 @@ bool AMatchGameManager::DoColorsMatchAndAreBothLooking(UColorMatchComponent* Fir
 // checks if position is inside play area box
 bool AMatchGameManager::IsInsidePlayArea(const FVector& WorldPosition) const
 {
-    return UKismetMathLibrary::IsPointInBoxWithTransform(WorldPosition, PlayArea->GetComponentTransform(), PlayArea->GetScaledBoxExtent());
+    FVector BoxCenter = PlayArea->GetComponentLocation();
+    FVector BoxExtent = PlayArea->GetScaledBoxExtent();
+
+    // Simple AABB check
+    FVector Min = BoxCenter - BoxExtent;
+    FVector Max = BoxCenter + BoxExtent;
+
+    return (WorldPosition.X >= Min.X && WorldPosition.X <= Max.X &&
+        WorldPosition.Y >= Min.Y && WorldPosition.Y <= Max.Y &&
+        WorldPosition.Z >= Min.Z && WorldPosition.Z <= Max.Z);
 }
 
 // called when two npcs collide. checks if colors match and awards points accordingly
@@ -194,12 +203,25 @@ void AMatchGameManager::ScheduleNextColorAssignment()
 // picks random idle npc inside play area and gives it a color to look for
 void AMatchGameManager::AssignColorToRandomNPC()
 {
+    // Debug: log play area info
+    FVector PlayAreaLocation = PlayArea->GetComponentLocation();
+    FVector PlayAreaExtent = PlayArea->GetScaledBoxExtent();
+    UE_LOG(LogTemp, Warning, TEXT("Play Area Center: %s, Extent: %s"),
+        *PlayAreaLocation.ToString(),
+        *PlayAreaExtent.ToString());
+
     TArray<AActor*> IdleNPCsInsideArea;
     for (auto& WeakNPC : RegisteredNPCs)
     {
         if (AActor* NPCActor = WeakNPC.Get())
         {
-            if (!IsInsidePlayArea(NPCActor->GetActorLocation()))
+            const bool bIsInside = IsInsidePlayArea(NPCActor->GetActorLocation());
+            UE_LOG(LogTemp, Warning, TEXT("NPC %s at %s - Inside play area: %s"),
+                *NPCActor->GetName(),
+                *NPCActor->GetActorLocation().ToString(),
+                bIsInside ? TEXT("YES") : TEXT("NO"));
+
+            if (!bIsInside)
             {
                 continue;
             }
@@ -213,6 +235,8 @@ void AMatchGameManager::AssignColorToRandomNPC()
         }
     }
 
+    UE_LOG(LogTemp, Warning, TEXT("Found %d idle NPCs inside play area"), IdleNPCsInsideArea.Num());
+
     if (IdleNPCsInsideArea.Num() > 0)
     {
         AActor* SelectedNPC = IdleNPCsInsideArea[FMath::RandRange(0, IdleNPCsInsideArea.Num() - 1)];
@@ -220,6 +244,7 @@ void AMatchGameManager::AssignColorToRandomNPC()
         {
             static const EMatchColor AVAILABLE_COLORS[] = { EMatchColor::Red, EMatchColor::Green, EMatchColor::Blue };
             const EMatchColor RandomColor = AVAILABLE_COLORS[FMath::RandHelper(3)];
+            UE_LOG(LogTemp, Warning, TEXT("Assigning color %d to NPC %s"), (int)RandomColor, *SelectedNPC->GetName());
             MatchComponent->Assign(RandomColor, true);
         }
     }
