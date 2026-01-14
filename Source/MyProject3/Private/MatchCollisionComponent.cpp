@@ -103,10 +103,11 @@ UColorMatchComponent* UMatchCollisionComponent::GetColorMatchComponent(AActor* A
     return Actor ? Actor->FindComponentByClass<UColorMatchComponent>() : nullptr;
 }
 
-// checks if this collision should be scored based on speed, colors, and play area
+// checks if this collision should be scored based on speed, colors, grabbed state, and play area
 bool UMatchCollisionComponent::ShouldScoreThisHit(AActor* OtherActor, float& OutRelativeSpeed,
     bool& bIsMyActorLooking, bool& bIsOtherActorLooking,
-    uint8& MyActorColor, uint8& OtherActorColor, bool& bAreBothActorsInsideArea) const
+    uint8& MyActorColor, uint8& OtherActorColor, bool& bAreBothActorsInsideArea,
+    bool& bIsAtLeastOneGrabbed) const
 {
     // initialize all output parameters
     OutRelativeSpeed = 0.f;
@@ -115,6 +116,7 @@ bool UMatchCollisionComponent::ShouldScoreThisHit(AActor* OtherActor, float& Out
     MyActorColor = 0;
     OtherActorColor = 0;
     bAreBothActorsInsideArea = true;
+    bIsAtLeastOneGrabbed = false;
 
     if (!OtherActor || !GetOwner())
     {
@@ -131,6 +133,17 @@ bool UMatchCollisionComponent::ShouldScoreThisHit(AActor* OtherActor, float& Out
     bIsOtherActorLooking = OtherMatchComponent->IsLooking();
     MyActorColor = (uint8)MyMatchComponent->CurrentColor;
     OtherActorColor = (uint8)OtherMatchComponent->CurrentColor;
+
+    // check if at least one NPC is currently grabbed
+    const bool bIsMyActorGrabbed = MyMatchComponent->IsGrabbed();
+    const bool bIsOtherActorGrabbed = OtherMatchComponent->IsGrabbed();
+    bIsAtLeastOneGrabbed = (bIsMyActorGrabbed || bIsOtherActorGrabbed);
+
+    // if we require at least one grabbed and neither is, reject the collision
+    if (bRequireOneGrabbed && !bIsAtLeastOneGrabbed)
+    {
+        return false;
+    }
 
     // check if collision was hard enough
     const FVector RelativeVelocity = OtherActor->GetVelocity() - GetOwner()->GetVelocity();
@@ -199,7 +212,8 @@ void UMatchCollisionComponent::OnActorHit(AActor* SelfActor, AActor* OtherActor,
     bool bIsMyActorLooking = false, bIsOtherActorLooking = false;
     uint8 MyActorColor = 0, OtherActorColor = 0;
     bool bAreBothInside = true;
-    const bool bShouldScore = ShouldScoreThisHit(OtherActor, RelativeSpeed, bIsMyActorLooking, bIsOtherActorLooking, MyActorColor, OtherActorColor, bAreBothInside);
+    bool bIsAtLeastOneGrabbed = false;
+    const bool bShouldScore = ShouldScoreThisHit(OtherActor, RelativeSpeed, bIsMyActorLooking, bIsOtherActorLooking, MyActorColor, OtherActorColor, bAreBothInside, bIsAtLeastOneGrabbed);
 
     if (bShouldScore)
     {
@@ -219,7 +233,8 @@ void UMatchCollisionComponent::OnComponentHit(UPrimitiveComponent* HitComponent,
     bool bIsMyActorLooking = false, bIsOtherActorLooking = false;
     uint8 MyActorColor = 0, OtherActorColor = 0;
     bool bAreBothInside = true;
-    const bool bShouldScore = ShouldScoreThisHit(OtherActor, RelativeSpeed, bIsMyActorLooking, bIsOtherActorLooking, MyActorColor, OtherActorColor, bAreBothInside);
+    bool bIsAtLeastOneGrabbed = false;
+    const bool bShouldScore = ShouldScoreThisHit(OtherActor, RelativeSpeed, bIsMyActorLooking, bIsOtherActorLooking, MyActorColor, OtherActorColor, bAreBothInside, bIsAtLeastOneGrabbed);
 
     if (bShouldScore)
     {
@@ -239,7 +254,8 @@ void UMatchCollisionComponent::OnComponentBeginOverlap(UPrimitiveComponent* Over
     bool bIsMyActorLooking = false, bIsOtherActorLooking = false;
     uint8 MyActorColor = 0, OtherActorColor = 0;
     bool bAreBothInside = true;
-    const bool bShouldScore = ShouldScoreThisHit(OtherActor, RelativeSpeed, bIsMyActorLooking, bIsOtherActorLooking, MyActorColor, OtherActorColor, bAreBothInside);
+    bool bIsAtLeastOneGrabbed = false;
+    const bool bShouldScore = ShouldScoreThisHit(OtherActor, RelativeSpeed, bIsMyActorLooking, bIsOtherActorLooking, MyActorColor, OtherActorColor, bAreBothInside, bIsAtLeastOneGrabbed);
 
     if (bShouldScore)
     {

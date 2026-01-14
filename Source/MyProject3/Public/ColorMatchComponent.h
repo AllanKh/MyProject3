@@ -8,6 +8,7 @@
 class AMatchGameManager;
 class UStaticMeshComponent;
 class UStaticMesh;
+class UGrabbableComponent;
 
 // tracks what state the npc is in for matching
 UENUM(BlueprintType)
@@ -39,6 +40,10 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Match|Debug")
     bool bIsComponentEnabled = true;
 
+    // whether this NPC is currently being grabbed/held by the player
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Match")
+    bool bIsCurrentlyGrabbed = false;
+
     // what color this npc is currently assigned
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Match")
     EMatchColor CurrentColor = EMatchColor::None;
@@ -61,13 +66,17 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Match|Visual")
     UStaticMesh* Mesh_TinyHero_Sword02 = nullptr;
 
-    // Offset of the icon above the NPC’s root
+    // Offset of the icon above the NPC's root
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Match|Visual")
     FVector IconOffset = FVector(0.f, 0.f, 120.f);
 
     // Scale of the icon mesh
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Match|Visual")
-    FVector IconScale = FVector(0.6f, 0.6f, 0.6f);
+    FVector IconScale = FVector(1.0f, 1.0f, 1.0f);
+
+    // Rotation offset for the icon mesh (applied before billboard rotation)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Match|Visual")
+    FRotator IconRotationOffset = FRotator(0.f, 0.f, -90.f);
 
     // events that fire during matching
     UPROPERTY(BlueprintAssignable, Category = "Match|Events")
@@ -79,6 +88,14 @@ public:
     UPROPERTY(BlueprintAssignable, Category = "Match|Events")
     FOnMismatchWith OnMismatchWith;
 
+    // sets whether this NPC is currently being grabbed
+    UFUNCTION(BlueprintCallable, Category = "Match")
+    void SetGrabbed(bool bGrabbed);
+
+    // checks if this NPC is currently grabbed
+    UFUNCTION(BlueprintCallable, Category = "Match")
+    bool IsGrabbed() const { return bIsCurrentlyGrabbed; }
+
     // gives this npc a color and makes it look for matches
     UFUNCTION(BlueprintCallable, Category = "Match")
     void Assign(EMatchColor NewColor, bool bIsLookingForMatch);
@@ -88,7 +105,7 @@ public:
     void ClearAssignment();
 
     UFUNCTION(BlueprintCallable, Category = "Match") // added by liz
-    void Reset();
+        void Reset();
 
     // checks if this npc is currently looking for a match
     UFUNCTION(BlueprintCallable, Category = "Match")
@@ -101,6 +118,7 @@ public:
 
 protected:
     virtual void BeginPlay() override;
+    virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 private:
     // updates the floating icon above npc
@@ -112,6 +130,16 @@ private:
     // finds the game manager in the world
     AMatchGameManager* FindGameManager() const;
 
+    // binds to GrabbableComponent events if present
+    void BindToGrabbableComponent();
+
+    // callbacks for GrabbableComponent events
+    UFUNCTION()
+    void OnGrabbedCallback();
+
+    UFUNCTION()
+    void OnReleasedCallback();
+
     // mesh component that shows icon above npc
     UPROPERTY()
     UStaticMeshComponent* DebugIconComponent = nullptr;
@@ -120,6 +148,10 @@ private:
     UPROPERTY()
     UStaticMesh* CurrentIconMesh = nullptr;
 
-    // picks a random mesh from the three configured options
-    UStaticMesh* GetRandomIconMesh() const;
+    // cached reference to grabbable component
+    UPROPERTY()
+    UGrabbableComponent* CachedGrabbableComponent = nullptr;
+
+    // gets the mesh associated with a specific color
+    UStaticMesh* GetIconMeshForColor(EMatchColor Color) const;
 };
