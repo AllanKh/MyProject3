@@ -12,6 +12,19 @@
 
 UNPCDataGatherer;
 UCameraDataGatherer;
+
+USTRUCT(BlueprintType)
+struct FEventRecord {
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Event")
+	FString ObjectName;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Event")
+	FString EventMessage;
+};
+
+
 UCLASS()
 class MYPROJECT3_API UDataManager : public UGameInstanceSubsystem
 {
@@ -23,6 +36,15 @@ public:
 
 	UPROPERTY(BlueprintReadWrite, Category = "Telemetry")
 	TArray<FCAMERADATASTRUCT> CameraDataStructCollection;
+
+	TMap<FString, FEventRecord> EventRecords;
+
+	UFUNCTION(BlueprintCallable, Category = "Telemetry")
+	void LogEvent(const FString& ObjectName, const FString& EventMessage);
+
+	UFUNCTION(BlueprintCallable, Category = "Telemetry")
+	void ExportEventLog();
+
 
 	UFUNCTION(BlueprintCallable, Category = "Telemetry")
 	void AddToNPCStruct(const FNPCDATASTRUCT &data);
