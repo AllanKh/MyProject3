@@ -4,41 +4,6 @@
 #include "TOOL/DataManager.h"
 #include "Kismet/GameplayStatics.h"
 
-void UDataManager::LogEvent(const FString& ObjectName, const FString& EventMessage)
-{
-    FDateTime Now = FDateTime::UtcNow();
-    FString Timestamp = Now.ToString(TEXT("%Y%m%d_%H%M%S_%s"));
-
-    FEventRecord newRecord;
-    newRecord.ObjectName = ObjectName;
-    newRecord.EventMessage = EventMessage;
-
-    EventRecords.Add(Timestamp, newRecord);
-}
-
-void UDataManager::ExportEventLog()
-{
-    FString Output = TEXT("Timestamp,ObjectName,EventMessage\n");
-
-    for (const auto& Pair : EventRecords)
-    {
-        Output += FString::Printf(TEXT("%s,%s,%s\n"), *Pair.Key, *Pair.Value.ObjectName, *Pair.Value.EventMessage);
-    }
-
-    FDateTime Now = FDateTime::UtcNow();
-    FString FileName = FString::Printf(TEXT("EventLog_%s.csv"), *Now.ToString(TEXT("%Y%m%d_%H%M%S")));
-    FString FilePath = FPaths::ProjectSavedDir() / FileName;
-
-    if (FFileHelper::SaveStringToFile(Output, *FilePath))
-    {
-        UE_LOG(LogTemp, Log, TEXT("Event log exported to: %s"), *FilePath);
-    }
-    else
-    {
-        UE_LOG(LogTemp, Error, TEXT("Failed to export event log to: %s"), *FilePath);
-    }
-}
-
 void UDataManager::AddToNPCStruct(const FNPCDATASTRUCT& data)
 {
     UE_LOG(LogTemp, Log, TEXT("Adding NPC telemetry from: %s"), *data.Name);
@@ -143,12 +108,7 @@ void UDataManager::PrintToCSV()
 
     FString CombinedCSV = NPCCSV + TEXT("\n\n") + CameraCSV;
 
-    FDateTime now = FDateTime::UtcNow();
-    FString Timestamp = now.ToString(TEXT("%Y%m%d_%H%M%S"));
-
-    FString FileName = FString::Printf(TEXT("TelemetryExport_%s.csv"), *Timestamp);
-
-    FString FilePath = FPaths::ProjectSavedDir() / FileName;
+    FString FilePath = FPaths::ProjectSavedDir() / TEXT("TelemetryExport.csv");
     bool bSuccess = FFileHelper::SaveStringToFile(CombinedCSV, *FilePath);
 
     if (bSuccess)
