@@ -1,10 +1,8 @@
 #include "ColorMatchComponent.h"
 #include "MatchGameManager.h"
-#include "../GrabbableComponent.h"
 #include "Components/TextRenderComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
-#include "Camera/PlayerCameraManager.h"
 
 UColorMatchComponent::UColorMatchComponent()
 {
@@ -32,14 +30,9 @@ void UColorMatchComponent::BeginPlay()
             DebugIconComponent->SetRelativeLocation(IconOffset);
             DebugIconComponent->SetRelativeScale3D(IconScale);
 
-            // purely visual - no collision or interaction
+            // purely visual
             DebugIconComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-            DebugIconComponent->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
             DebugIconComponent->SetCastShadow(false);
-            DebugIconComponent->SetGenerateOverlapEvents(false);
-            DebugIconComponent->CanCharacterStepUpOn = ECB_No;
-            DebugIconComponent->SetVisibility(true);
-            DebugIconComponent->bRenderCustomDepth = false;
 
             DebugIconComponent->SetHiddenInGame(true);
         }
@@ -47,67 +40,8 @@ void UColorMatchComponent::BeginPlay()
 
     RefreshDebugLabel();
     TryAutoRegisterWithManager();
-    BindToGrabbableComponent();
 }
 
-void UColorMatchComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
-{
-    Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-    // make the icon mesh face the camera
-    if (DebugIconComponent && !DebugIconComponent->bHiddenInGame)
-    {
-        if (UWorld* World = GetWorld())
-        {
-            if (APlayerController* PC = World->GetFirstPlayerController())
-            {
-                if (APlayerCameraManager* CameraManager = PC->PlayerCameraManager)
-                {
-                    FVector CameraLocation = CameraManager->GetCameraLocation();
-                    FVector IconLocation = DebugIconComponent->GetComponentLocation();
-
-                    // calculate rotation to face camera
-                    FVector DirectionToCamera = CameraLocation - IconLocation;
-                    DirectionToCamera.Z = 0; // keep upright, only rotate on Z axis
-
-                    if (!DirectionToCamera.IsNearlyZero())
-                    {
-                        FRotator LookAtRotation = DirectionToCamera.Rotation();
-                        // apply the rotation offset
-                        LookAtRotation += IconRotationOffset;
-                        DebugIconComponent->SetWorldRotation(LookAtRotation);
-                    }
-                }
-            }
-        }
-    }
-}
-
-// binds to GrabbableComponent events if one exists on the same actor
-void UColorMatchComponent::BindToGrabbableComponent()
-{
-    if (AActor* Owner = GetOwner())
-    {
-        CachedGrabbableComponent = Owner->FindComponentByClass<UGrabbableComponent>();
-        if (CachedGrabbableComponent)
-        {
-            CachedGrabbableComponent->OnGrabbed.AddDynamic(this, &UColorMatchComponent::OnGrabbedCallback);
-            CachedGrabbableComponent->OnReleased.AddDynamic(this, &UColorMatchComponent::OnReleasedCallback);
-        }
-    }
-}
-
-// callback when GrabbableComponent fires OnGrabbed
-void UColorMatchComponent::OnGrabbedCallback()
-{
-    SetGrabbed(true);
-}
-
-// callback when GrabbableComponent fires OnReleased
-void UColorMatchComponent::OnReleasedCallback()
-{
-    SetGrabbed(false);
-}
 
 // finds the game manager in the world
 AMatchGameManager* UColorMatchComponent::FindGameManager() const
@@ -126,12 +60,6 @@ void UColorMatchComponent::TryAutoRegisterWithManager()
     }
 }
 
-// sets whether this NPC is currently being grabbed
-void UColorMatchComponent::SetGrabbed(bool bGrabbed)
-{
-    bIsCurrentlyGrabbed = bGrabbed;
-}
-
 // assigns color and sets state to looking or idle
 void UColorMatchComponent::Assign(EMatchColor NewColor, bool bIsLookingForMatch)
 {
@@ -143,10 +71,10 @@ void UColorMatchComponent::Assign(EMatchColor NewColor, bool bIsLookingForMatch)
     CurrentColor = NewColor;
     State = bIsLookingForMatch ? EMatchState::LookingForMatch : EMatchState::Idle;
 
-    // when NPC starts looking for a match, get the mesh for this color
+    // when NPC starts looking for a match, pick a random icon mesh
     if (State == EMatchState::LookingForMatch)
     {
-        CurrentIconMesh = GetIconMeshForColor(CurrentColor);
+        CurrentIconMesh = GetRandomIconMesh();
 
         if (DebugIconComponent && CurrentIconMesh)
         {
@@ -159,19 +87,31 @@ void UColorMatchComponent::Assign(EMatchColor NewColor, bool bIsLookingForMatch)
 }
 
 
-UStaticMesh* UColorMatchComponent::GetIconMeshForColor(EMatchColor Color) const
+UStaticMesh* UColorMatchComponent::GetRandomIconMesh() const
 {
-    switch (Color)
+    TArray<UStaticMesh*> Candidates;
+
+    if (Mesh_RPGHero_Sword01)
     {
-    case EMatchColor::Red:
-        return Mesh_RPGHero_Sword01;
-    case EMatchColor::Green:
-        return Mesh_AnimalHero_Shield01;
-    case EMatchColor::Blue:
-        return Mesh_TinyHero_Sword02;
-    default:
+        Candidates.Add(Mesh_RPGHero_Sword01);
+    }
+    if (Mesh_AnimalHero_Shield01)
+    {
+        Candidates.Add(Mesh_AnimalHero_Shield01);
+    }
+    if (Mesh_TinyHero_Sword02)
+    {
+        Candidates.Add(Mesh_TinyHero_Sword02);
+    }
+
+    if (Candidates.Num() == 0)
+    {
+        // nothing configured
         return nullptr;
     }
+
+    const int32 Index = FMath::RandRange(0, Candidates.Num() - 1);
+    return Candidates[Index];
 }
 
 
@@ -287,5 +227,5 @@ void UColorMatchComponent::RefreshDebugLabel()
 
 void UColorMatchComponent::Reset() {
     State = EMatchState::Idle;
-    bIsCurrentlyGrabbed = false;
 }
+

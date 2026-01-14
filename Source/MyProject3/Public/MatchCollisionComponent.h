@@ -32,10 +32,6 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Match|Collision")
     bool bMustBeInsidePlayArea = false;
 
-    // whether at least one NPC must be grabbed for collision to count
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Match|Collision")
-    bool bRequireOneGrabbed = true;
-
     // whether to log collision setup info
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Match|Collision|Debug")
     bool bShouldDebugLog = true;
@@ -63,7 +59,7 @@ private:
 
     // checks if collision meets requirements to be scored
     bool ShouldScoreThisHit(AActor* OtherActor, float& OutRelativeSpeed, bool& bIsMyActorLooking, bool& bIsOtherActorLooking,
-        uint8& MyActorColor, uint8& OtherActorColor, bool& bAreBothActorsInsideArea, bool& bIsAtLeastOneGrabbed) const;
+        uint8& MyActorColor, uint8& OtherActorColor, bool& bAreBothActorsInsideArea) const;
 
     // sends valid collision to game manager
     void ForwardCollisionToManager(AActor* SelfActor, AActor* OtherActor) const;
