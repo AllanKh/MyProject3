@@ -43,6 +43,8 @@ UColorMatchComponent* AMatchGameManager::GetColorMatchComponent(AActor* Actor)
 // checks if two npcs have matching colors and are both looking for matches
 bool AMatchGameManager::DoColorsMatchAndAreBothLooking(UColorMatchComponent* FirstComponent, UColorMatchComponent* SecondComponent, EMatchColor& OutMatchedColor)
 {
+    OutMatchedColor = EMatchColor::None;
+
     if (!FirstComponent || !SecondComponent)
     {
         return false;
@@ -66,13 +68,28 @@ bool AMatchGameManager::DoColorsMatchAndAreBothLooking(UColorMatchComponent* Fir
 // checks if position is inside play area box
 bool AMatchGameManager::IsInsidePlayArea(const FVector& WorldPosition) const
 {
-    return UKismetMathLibrary::IsPointInBoxWithTransform(WorldPosition, PlayArea->GetComponentTransform(), PlayArea->GetScaledBoxExtent());
+    FVector BoxCenter = PlayArea->GetComponentLocation();
+    FVector BoxExtent = PlayArea->GetScaledBoxExtent();
+
+    // Simple AABB check
+    FVector Min = BoxCenter - BoxExtent;
+    FVector Max = BoxCenter + BoxExtent;
+
+    return (WorldPosition.X >= Min.X && WorldPosition.X <= Max.X &&
+        WorldPosition.Y >= Min.Y && WorldPosition.Y <= Max.Y &&
+        WorldPosition.Z >= Min.Z && WorldPosition.Z <= Max.Z);
 }
 
 // called when two npcs collide. checks if colors match and awards points accordingly
 void AMatchGameManager::HandleNPCVsNPCCollision(AActor* FirstActor, AActor* SecondActor)
 {
     if (!FirstActor || !SecondActor)
+    {
+        return;
+    }
+
+    // prevent processing the same actor colliding with itself
+    if (FirstActor == SecondActor)
     {
         return;
     }
@@ -85,11 +102,45 @@ void AMatchGameManager::HandleNPCVsNPCCollision(AActor* FirstActor, AActor* Seco
         return;
     }
 
+    // early out if neither is looking - no match/mismatch should occur
+    if (!FirstMatchComponent->IsLooking() && !SecondMatchComponent->IsLooking())
+    {
+        return;
+    }
+
+    // both must be looking for a match/mismatch to occur
+    // this prevents the case where one NPC without a color bumps into one with a color
+    if (!FirstMatchComponent->IsLooking() || !SecondMatchComponent->IsLooking())
+    {
+        return;
+    }
+
+    // debug logging
+    UE_LOG(LogTemp, Warning, TEXT("HandleNPCVsNPCCollision: %s (Color=%d, State=%d) vs %s (Color=%d, State=%d)"),
+        *FirstActor->GetName(), (int)FirstMatchComponent->CurrentColor, (int)FirstMatchComponent->State,
+        *SecondActor->GetName(), (int)SecondMatchComponent->CurrentColor, (int)SecondMatchComponent->State);
+
+    // log the actual color names for clarity
+    auto GetColorName = [](EMatchColor Color) -> FString {
+        switch (Color) {
+        case EMatchColor::None: return TEXT("None");
+        case EMatchColor::Red: return TEXT("Red");
+        case EMatchColor::Green: return TEXT("Green");
+        case EMatchColor::Blue: return TEXT("Blue");
+        case EMatchColor::Yellow: return TEXT("Yellow");
+        default: return TEXT("Unknown");
+        }
+        };
+
+    UE_LOG(LogTemp, Warning, TEXT("  First NPC color: %s, Second NPC color: %s, Same? %s"),
+        *GetColorName(FirstMatchComponent->CurrentColor),
+        *GetColorName(SecondMatchComponent->CurrentColor),
+        (FirstMatchComponent->CurrentColor == SecondMatchComponent->CurrentColor) ? TEXT("YES") : TEXT("NO"));
 
     EMatchColor MatchedColor;
     if (DoColorsMatchAndAreBothLooking(FirstMatchComponent, SecondMatchComponent, MatchedColor))
     {
-        // colors match. give point and remove both npcs
+        // colors match and both are looking - give point
         UE_LOG(LogTemp, Warning, TEXT("MATCH +1"));
         AddToScore(+1);
         ShowScoreToast(+1);
@@ -101,13 +152,10 @@ void AMatchGameManager::HandleNPCVsNPCCollision(AActor* FirstActor, AActor* Seco
 
         // call Blueprint event for successful match
         OnNPCMatch(FirstActor, SecondActor);
-
-        //DespawnNPC(FirstActor);
-        //DespawnNPC(SecondActor);
     }
     else
     {
-        // colors dont match. lose point and remove both npcs
+        // both are looking but colors don't match - mismatch
         UE_LOG(LogTemp, Warning, TEXT("MISMATCH -1"));
         AddToScore(-1);
         ShowScoreToast(-1);
@@ -117,8 +165,6 @@ void AMatchGameManager::HandleNPCVsNPCCollision(AActor* FirstActor, AActor* Seco
 
         // call blueprint event to trigger death
         OnNPCMismatch(FirstActor, SecondActor);
-
-        //DespawnNPC(SecondActor);
     }
 }
 
@@ -157,12 +203,25 @@ void AMatchGameManager::ScheduleNextColorAssignment()
 // picks random idle npc inside play area and gives it a color to look for
 void AMatchGameManager::AssignColorToRandomNPC()
 {
+    // Debug: log play area info
+    FVector PlayAreaLocation = PlayArea->GetComponentLocation();
+    FVector PlayAreaExtent = PlayArea->GetScaledBoxExtent();
+    UE_LOG(LogTemp, Warning, TEXT("Play Area Center: %s, Extent: %s"),
+        *PlayAreaLocation.ToString(),
+        *PlayAreaExtent.ToString());
+
     TArray<AActor*> IdleNPCsInsideArea;
     for (auto& WeakNPC : RegisteredNPCs)
     {
         if (AActor* NPCActor = WeakNPC.Get())
         {
-            if (!IsInsidePlayArea(NPCActor->GetActorLocation()))
+            const bool bIsInside = IsInsidePlayArea(NPCActor->GetActorLocation());
+            UE_LOG(LogTemp, Warning, TEXT("NPC %s at %s - Inside play area: %s"),
+                *NPCActor->GetName(),
+                *NPCActor->GetActorLocation().ToString(),
+                bIsInside ? TEXT("YES") : TEXT("NO"));
+
+            if (!bIsInside)
             {
                 continue;
             }
@@ -176,13 +235,16 @@ void AMatchGameManager::AssignColorToRandomNPC()
         }
     }
 
+    UE_LOG(LogTemp, Warning, TEXT("Found %d idle NPCs inside play area"), IdleNPCsInsideArea.Num());
+
     if (IdleNPCsInsideArea.Num() > 0)
     {
         AActor* SelectedNPC = IdleNPCsInsideArea[FMath::RandRange(0, IdleNPCsInsideArea.Num() - 1)];
         if (UColorMatchComponent* MatchComponent = GetColorMatchComponent(SelectedNPC))
         {
-            static const EMatchColor AVAILABLE_COLORS[] = { EMatchColor::Red, EMatchColor::Green, EMatchColor::Blue, EMatchColor::Yellow };
-            const EMatchColor RandomColor = AVAILABLE_COLORS[FMath::RandHelper(4)];
+            static const EMatchColor AVAILABLE_COLORS[] = { EMatchColor::Red, EMatchColor::Green, EMatchColor::Blue };
+            const EMatchColor RandomColor = AVAILABLE_COLORS[FMath::RandHelper(3)];
+            UE_LOG(LogTemp, Warning, TEXT("Assigning color %d to NPC %s"), (int)RandomColor, *SelectedNPC->GetName());
             MatchComponent->Assign(RandomColor, true);
         }
     }
