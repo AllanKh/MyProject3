@@ -36,13 +36,21 @@ class MYPROJECT3_API UColorMatchComponent : public UActorComponent
 public:
     UColorMatchComponent();
 
-    // whether this component is currently active (match logic & events enabled)
+    // whether this component is currently active
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Match|Debug")
     bool bIsComponentEnabled = true;
 
     // whether this NPC is currently being grabbed/held by the player
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Match")
     bool bIsCurrentlyGrabbed = false;
+
+    // cooldown time after match/mismatch before NPC can be assigned a new color
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Match")
+    float AssignmentCooldown = 5.0f;
+
+    // time remaining on cooldown
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Match")
+    float CooldownRemaining = 0.0f;
 
     // what color this npc is currently assigned
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Match")
@@ -66,7 +74,7 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Match|Visual")
     UStaticMesh* Mesh_TinyHero_Sword02 = nullptr;
 
-    // Offset of the icon above the NPC's root
+    // Offset of the icon above the NPC
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Match|Visual")
     FVector IconOffset = FVector(0.f, 0.f, 120.f);
 
@@ -74,7 +82,7 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Match|Visual")
     FVector IconScale = FVector(1.0f, 1.0f, 1.0f);
 
-    // Rotation offset for the icon mesh (applied before billboard rotation)
+    // Rotation offset for the icon mesh
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Match|Visual")
     FRotator IconRotationOffset = FRotator(0.f, 0.f, -90.f);
 
@@ -110,6 +118,10 @@ public:
     // checks if this npc is currently looking for a match
     UFUNCTION(BlueprintCallable, Category = "Match")
     bool IsLooking() const { return State == EMatchState::LookingForMatch; }
+
+    // checks if this NPC is on cooldown and can't be assigned a color
+    UFUNCTION(BlueprintCallable, Category = "Match")
+    bool IsOnCooldown() const { return CooldownRemaining > 0.0f; }
 
     // called by manager when match succeeds
     void HandleMatched(AActor* OtherActor);

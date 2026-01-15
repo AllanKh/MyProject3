@@ -32,7 +32,7 @@ void UColorMatchComponent::BeginPlay()
             DebugIconComponent->SetRelativeLocation(IconOffset);
             DebugIconComponent->SetRelativeScale3D(IconScale);
 
-            // purely visual
+            // purely visual - no collision or interaction
             DebugIconComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
             DebugIconComponent->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
             DebugIconComponent->SetCastShadow(false);
@@ -54,7 +54,17 @@ void UColorMatchComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 {
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-    // check if NPC left the play area and if so, clear their assignment
+    // tick down cooldown
+    if (CooldownRemaining > 0.0f)
+    {
+        CooldownRemaining -= DeltaTime;
+        if (CooldownRemaining < 0.0f)
+        {
+            CooldownRemaining = 0.0f;
+        }
+    }
+
+    // check if NPC left the play area, clear assignment
     if (State == EMatchState::LookingForMatch)
     {
         if (AMatchGameManager* GameManager = FindGameManager())
@@ -216,6 +226,7 @@ void UColorMatchComponent::HandleMatched(AActor* OtherActor)
 
     State = EMatchState::Matched;
     CurrentIconMesh = nullptr;
+    CooldownRemaining = AssignmentCooldown;
     RefreshDebugLabel();
     OnMatchedWith.Broadcast(OtherActor);
 }
@@ -231,6 +242,7 @@ void UColorMatchComponent::HandleMismatch(AActor* OtherActor)
 
     State = EMatchState::Dead;
     CurrentIconMesh = nullptr;
+    CooldownRemaining = AssignmentCooldown;
     RefreshDebugLabel();
     OnMismatchWith.Broadcast(OtherActor);
 }

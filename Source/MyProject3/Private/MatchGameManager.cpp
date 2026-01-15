@@ -102,7 +102,7 @@ void AMatchGameManager::HandleNPCVsNPCCollision(AActor* FirstActor, AActor* Seco
         return;
     }
 
-    // early out if neither is looking - no match/mismatch should occur
+    // early out if neither is looking
     if (!FirstMatchComponent->IsLooking() && !SecondMatchComponent->IsLooking())
     {
         return;
@@ -140,7 +140,7 @@ void AMatchGameManager::HandleNPCVsNPCCollision(AActor* FirstActor, AActor* Seco
     EMatchColor MatchedColor;
     if (DoColorsMatchAndAreBothLooking(FirstMatchComponent, SecondMatchComponent, MatchedColor))
     {
-        // colors match and both are looking - give point
+        // colors match and both are looking
         UE_LOG(LogTemp, Warning, TEXT("MATCH +1"));
         AddToScore(+1);
         ShowScoreToast(+1);
@@ -155,7 +155,7 @@ void AMatchGameManager::HandleNPCVsNPCCollision(AActor* FirstActor, AActor* Seco
     }
     else
     {
-        // both are looking but colors don't match - mismatch
+        // both are looking but colors mismatch
         UE_LOG(LogTemp, Warning, TEXT("MISMATCH -1"));
         AddToScore(-1);
         ShowScoreToast(-1);
@@ -227,7 +227,7 @@ void AMatchGameManager::AssignColorToRandomNPC()
             }
             if (UColorMatchComponent* MatchComponent = GetColorMatchComponent(NPCActor))
             {
-                if (MatchComponent->State == EMatchState::Idle)
+                if (MatchComponent->State == EMatchState::Idle && !MatchComponent->IsOnCooldown())
                 {
                     IdleNPCsInsideArea.Add(NPCActor);
                 }
