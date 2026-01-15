@@ -32,7 +32,7 @@ void UColorMatchComponent::BeginPlay()
             DebugIconComponent->SetRelativeLocation(IconOffset);
             DebugIconComponent->SetRelativeScale3D(IconScale);
 
-            // purely visual - no collision or interaction
+            // purely visual
             DebugIconComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
             DebugIconComponent->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
             DebugIconComponent->SetCastShadow(false);
@@ -53,6 +53,20 @@ void UColorMatchComponent::BeginPlay()
 void UColorMatchComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+    // check if NPC left the play area and if so, clear their assignment
+    if (State == EMatchState::LookingForMatch)
+    {
+        if (AMatchGameManager* GameManager = FindGameManager())
+        {
+            if (!GameManager->IsInsidePlayArea(GetOwner()->GetActorLocation()))
+            {
+                // NPC left the play area, clear their assignment
+                ClearAssignment();
+                return;
+            }
+        }
+    }
 
     // make the icon mesh face the camera
     if (DebugIconComponent && !DebugIconComponent->bHiddenInGame)
